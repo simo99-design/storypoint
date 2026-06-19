@@ -220,15 +220,15 @@ const IC = {
 };
 
 // ── Integrazione Supabase ────────────────────────────────────────────────────
-// INSERISCI QUI I DATI DEL TUO PROGETTO SUPABASE
-const SUPABASE_URL = 'INSERISCI_QUI_IL_TUO_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'INSERISCI_QUI_LA_TUA_CHIAVE_ANONIMA';
+// I DATI DEL TUO PROGETTO SONO STATI INSERITI QUI SOTTO
+const SUPABASE_URL = 'https://gztmjoqtvwodfsydtzny.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_IlNkOvhWaJ67Lmsj96v__A_m77tZ4ZP';
 
 let supabase = null;
 if (window.supabase) {
     try {
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    } catch(e) { console.error("Configura URL e Key di Supabase alla riga 80"); }
+    } catch(e) { console.error("Configurazione Supabase non valida alla riga 80"); }
 }
 
 let currentUser = null;
@@ -292,7 +292,7 @@ authToggleBtn.addEventListener('click', () => {
 authForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if(!supabase) {
-        showError("Supabase non è configurato. Inserisci URL e Key nel codice HTML.");
+        showError("Supabase non è configurato correttamente.");
         return;
     }
 
