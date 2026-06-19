@@ -221,14 +221,14 @@ const IC = {
 
 // ── Integrazione Supabase ────────────────────────────────────────────────────
 // INSERISCI QUI I DATI DEL TUO PROGETTO SUPABASE
-const SUPABASE_URL = 'https://supabase.com/dashboard/project/gztmjoqtvwodfsydtznyL';
-const SUPABASE_ANON_KEY = 'sb_publishable_IlNkOvhWaJ67Lmsj96v__A_m77tZ4ZP';
+const SUPABASE_URL = 'INSERISCI_QUI_IL_TUO_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'INSERISCI_QUI_LA_TUA_CHIAVE_ANONIMA';
 
 let supabase = null;
 if (window.supabase) {
     try {
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    } catch(e) { console.error("Configura URL e Key di Supabase alla riga 802"); }
+    } catch(e) { console.error("Configura URL e Key di Supabase alla riga 80"); }
 }
 
 let currentUser = null;
@@ -257,7 +257,7 @@ async function syncToSupabase() {
     const { error } = await supabase.from('user_data').upsert({
         user_id: currentUser.id,
         app_state: stateToSave
-    });
+    }, { onConflict: 'user_id' }); // Aggiunta protezione onConflict
     
     if (error) console.error("Errore salvataggio:", error);
 }
@@ -301,6 +301,10 @@ authForm.addEventListener('submit', async (e) => {
     authSubmitBtn.innerHTML = `${IC.loader} Attendi...`;
     authSubmitBtn.disabled = true;
     authErrorMsg.style.display = 'none';
+    
+    // Resetta lo stile del messaggio (nel caso fosse verde dal successo precedente)
+    authErrorMsg.style.backgroundColor = '#fef2f2';
+    authErrorMsg.style.color = '#ef4444';
 
     let result;
     if (isLoginMode) {
@@ -314,7 +318,16 @@ authForm.addEventListener('submit', async (e) => {
         authSubmitBtn.textContent = isLoginMode ? "Accedi" : "Registrati";
         authSubmitBtn.disabled = false;
     } else {
-        // Il listener onAuthStateChange gestirà il passaggio successivo
+        // Se è una registrazione e Supabase richiede la conferma via email (la session è vuota)
+        if (!isLoginMode && result.data && !result.data.session) {
+            authErrorMsg.textContent = "Registrazione completata! Controlla la tua email per attivare l'account.";
+            authErrorMsg.style.display = 'block';
+            authErrorMsg.style.backgroundColor = '#dcfce7'; // Sfondo verde
+            authErrorMsg.style.color = '#15803d'; // Testo verde scuro
+            authSubmitBtn.textContent = "Registrati";
+            authSubmitBtn.disabled = false;
+        }
+        // Il listener onAuthStateChange intercetterà il login effettivo una volta pronti
     }
 });
 
