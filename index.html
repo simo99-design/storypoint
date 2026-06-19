@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agile Time Tracker & Workspace</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -14,26 +15,36 @@
             min-height: 100vh;
         }
 
+        /* ── Auth Screen ── */
+        #auth-screen {
+            position: fixed; inset: 0; background: #f8fafc; z-index: 100;
+            display: flex; align-items: center; justify-content: center; padding: 1.5rem;
+        }
+        .auth-card {
+            background: white; width: 100%; max-width: 24rem; border-radius: 1rem;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,.1); padding: 2rem;
+            border: 1px solid #e2e8f0; text-align: center;
+        }
+        .auth-logo {
+            background: #2563eb; color: white; display: inline-flex;
+            padding: .75rem; border-radius: .75rem; margin-bottom: 1rem;
+        }
+        .auth-title { font-size: 1.5rem; font-weight: 700; margin-bottom: .5rem; color: #1e293b; }
+        .auth-sub { font-size: .875rem; color: #64748b; margin-bottom: 1.5rem; }
+        .auth-form { display: flex; flex-direction: column; gap: 1rem; text-align: left; }
+        .auth-toggle { font-size: .875rem; color: #2563eb; cursor: pointer; background: none; border: none; margin-top: 1.5rem; text-decoration: underline; font-family: inherit; }
+        .auth-error { font-size: .875rem; color: #ef4444; margin-bottom: 1rem; display: none; background: #fef2f2; padding: .5rem; border-radius: .5rem; text-align: center;}
+
         /* ── Header ── */
         header {
-            background: white;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 1rem 1.5rem;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,.05);
-            flex-wrap: wrap;
+            background: white; border-bottom: 1px solid #e2e8f0; padding: 1rem 1.5rem;
+            position: sticky; top: 0; z-index: 10; display: flex; align-items: center;
+            justify-content: space-between; gap: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,.05); flex-wrap: wrap;
         }
 
         .brand { display: flex; align-items: center; gap: .75rem; }
         .brand-icon {
-            background: #2563eb; color: white;
-            padding: .5rem; border-radius: .5rem;
+            background: #2563eb; color: white; padding: .5rem; border-radius: .5rem;
             display: flex; align-items: center; justify-content: center;
         }
         .brand-title  { font-size: 1.25rem; font-weight: 700; color: #1e293b; }
@@ -49,11 +60,9 @@
         }
 
         .btn {
-            display: inline-flex; align-items: center; gap: .4rem;
-            padding: .5rem 1rem; border-radius: .5rem;
-            font-size: .875rem; font-weight: 500;
-            cursor: pointer; border: none; font-family: inherit;
-            transition: background .15s;
+            display: inline-flex; align-items: center; gap: .4rem; justify-content: center;
+            padding: .5rem 1rem; border-radius: .5rem; font-size: .875rem; font-weight: 500;
+            cursor: pointer; border: none; font-family: inherit; transition: background .15s;
         }
         .btn-dark    { background: #1e293b; color: white; }
         .btn-dark:hover  { background: #334155; }
@@ -61,63 +70,32 @@
         .btn-primary:hover { background: #1d4ed8; }
         .btn-ghost   { background: transparent; color: #475569; }
         .btn-ghost:hover { background: #f1f5f9; }
+        .btn-logout  { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; }
+        .btn-logout:hover { background: #fee2e2; }
 
         /* ── Main ── */
         main { padding: 1.5rem; max-width: 90rem; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
 
         /* ── Card ── */
-        .card {
-            background: white; border-radius: 1rem;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 1px 3px rgba(0,0,0,.04);
-            padding: 1.5rem;
-        }
-
-        /* ── Sprint header ── */
+        .card { background: white; border-radius: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,.04); padding: 1.5rem; }
         .sprint-hdr { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap; }
         .sprint-title { font-size: 1.5rem; font-weight: 700; color: #1e293b; margin-bottom: .5rem; }
         .sprint-meta  { display: flex; gap: 1rem; font-size: .875rem; color: #475569; flex-wrap: wrap; }
         .sprint-meta span { display: flex; align-items: center; gap: .375rem; }
 
-        /* ── Stats grid ── */
         .stat-card { border-radius: .75rem; padding: 1.25rem; border: 1px solid; }
         .stat-card.indigo { background: #eef2ff; border-color: #c7d2fe; display: flex; flex-direction: column; }
         .sc-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: .5rem; }
         .sc-title { font-weight: 600; font-size: .9rem; display: flex; align-items: center; gap: .5rem; color: #312e81; }
 
-        /* project list in indigo card */
-        .proj-list { 
-            display: flex; 
-            flex-direction: row; 
-            flex-wrap: wrap; 
-            gap: 1rem; 
-            margin-top: 0.5rem;
-        }
-
-        .proj-item { 
-            background: white; 
-            border: 1px solid #c7d2fe; 
-            border-radius: .5rem; 
-            padding: 1rem; 
-            position: relative; 
-            overflow: hidden; 
-            flex: 1; 
-            min-width: 250px; 
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
+        .proj-list { display: flex; flex-direction: row; flex-wrap: wrap; gap: 1rem; margin-top: 0.5rem; }
+        .proj-item { background: white; border: 1px solid #c7d2fe; border-radius: .5rem; padding: 1rem; position: relative; overflow: hidden; flex: 1; min-width: 250px; display: flex; align-items: center; justify-content: space-between; }
         .proj-name { font-weight: 700; font-size: 1rem; color: #334155; }
         .proj-hours { background: #eff6ff; color: #1d4ed8; padding: .25rem .75rem; border-radius: 9999px; font-size: .875rem; font-weight: 600; border: 1px solid #bfdbfe; }
 
         /* ── Tabs ── */
         .tabs { display: flex; gap: 1.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid #e2e8f0; }
-        .tab-btn {
-            padding-bottom: .75rem; font-size: .875rem; font-weight: 600;
-            border: none; background: none; cursor: pointer; color: #64748b;
-            position: relative; transition: color .15s; font-family: inherit;
-        }
+        .tab-btn { padding-bottom: .75rem; font-size: .875rem; font-weight: 600; border: none; background: none; cursor: pointer; color: #64748b; position: relative; transition: color .15s; font-family: inherit; }
         .tab-btn:hover { color: #1e293b; }
         .tab-btn.active { color: #2563eb; }
         .tab-btn.active::after { content:''; position: absolute; bottom: -1px; left:0; right:0; height: 2px; background: #2563eb; }
@@ -126,14 +104,9 @@
         .sec-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: .75rem; }
         .sec-title { font-size: 1.25rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: .5rem; }
         .week-btns { display: flex; gap: .5rem; flex-wrap: wrap; }
-        .week-btn {
-            padding: .375rem .75rem; border-radius: .5rem; font-size: .875rem;
-            font-weight: 500; border: none; cursor: pointer;
-            background: #f1f5f9; color: #475569; font-family: inherit; transition: background .15s;
-        }
+        .week-btn { padding: .375rem .75rem; border-radius: .5rem; font-size: .875rem; font-weight: 500; border: none; cursor: pointer; background: #f1f5f9; color: #475569; font-family: inherit; transition: background .15s; }
         .week-btn:hover  { background: #e2e8f0; }
         .week-btn.active { background: #dbeafe; color: #1d4ed8; }
-
         .table-wrap { overflow-x: auto; padding-bottom: 1rem; }
         table { width: 100%; border-collapse: collapse; min-width: 800px; font-size: .875rem; }
         th, td { border: 1px solid #e2e8f0; padding: .75rem; }
@@ -142,95 +115,25 @@
         th.sat { background: #fff1f2; color: #e11d48; }
         td:first-child { background: #f8fafc; font-weight: 500; color: #475569; white-space: nowrap; }
         td.sat { background: rgba(255,241,242,.3); }
-
         .cell-wrap { position: relative; min-height: 48px; display: flex; align-items: center; justify-content: center; transition: background .15s; cursor: pointer; }
         .cell-wrap:hover { background: rgba(59,130,246,.05); }
         .cell-select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-        .cell-tag {
-            padding: .25rem .625rem; background: white; border: 1px solid #e2e8f0;
-            box-shadow: 0 1px 2px rgba(0,0,0,.05); border-radius: .375rem;
-            font-weight: 700; font-size: .75rem; color: #334155; pointer-events: none;
-        }
-
+        .cell-tag { padding: .25rem .625rem; background: white; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,.05); border-radius: .375rem; font-weight: 700; font-size: .75rem; color: #334155; pointer-events: none; }
         .proj-badges { margin-top: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
         .pb-label  { font-size: .875rem; font-weight: 600; color: #475569; }
         .pb-badge  { padding: .25rem .75rem; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 9999px; font-size: .875rem; font-weight: 500; }
 
-        /* ── Workspace Notion-style con Toolbar Icone ── */
-        .workspace-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
-            gap: 1.5rem; 
-            align-items: start; 
-        }
-        .workspace-group { 
-            background: white; border: 1px solid #e2e8f0; 
-            border-radius: .75rem; padding: 1.5rem; 
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            transition: box-shadow .2s;
-            display: flex;
-            flex-direction: column;
-        }
+        /* ── Workspace Notion-style ── */
+        .workspace-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; align-items: start; }
+        .workspace-group { background: white; border: 1px solid #e2e8f0; border-radius: .75rem; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); transition: box-shadow .2s; display: flex; flex-direction: column; }
         .workspace-group:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); }
-        
-        .wg-title { 
-            font-size: 1.125rem; font-weight: 700; color: #1e293b; 
-            margin-bottom: 1rem; display: flex; align-items: center; gap: .5rem; 
-        }
-
-        /* Toolbar di Formattazione */
-        .editor-toolbar {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 0.25rem;
-            padding-bottom: 0.75rem;
-            margin-bottom: 0.75rem;
-            border-bottom: 2px solid #f1f5f9;
-        }
-        
-        .toolbar-divider {
-            width: 1px;
-            height: 18px;
-            background: #cbd5e1;
-            margin: 0 0.25rem;
-        }
-
-        .toolbar-btn {
-            background: transparent;
-            border: 1px solid transparent;
-            border-radius: 0.375rem;
-            padding: 0.35rem;
-            color: #64748b;
-            cursor: pointer;
-            transition: all 0.15s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .toolbar-btn:hover {
-            background: #f1f5f9;
-            color: #1e293b;
-        }
-
-        /* Editor Notion-style */
-        .notion-editor {
-            min-height: 200px;
-            outline: none;
-            color: #334155;
-            font-size: .9375rem;
-            line-height: 1.6;
-        }
-        
-        .notion-editor[contenteditable]:empty:before {
-            content: attr(data-placeholder);
-            color: #94a3b8;
-            pointer-events: none;
-            display: block;
-        }
-
-        /* Stili Markdown */
+        .wg-title { font-size: 1.125rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem; display: flex; align-items: center; gap: .5rem; }
+        .editor-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem; padding-bottom: 0.75rem; margin-bottom: 0.75rem; border-bottom: 2px solid #f1f5f9; }
+        .toolbar-divider { width: 1px; height: 18px; background: #cbd5e1; margin: 0 0.25rem; }
+        .toolbar-btn { background: transparent; border: 1px solid transparent; border-radius: 0.375rem; padding: 0.35rem; color: #64748b; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
+        .toolbar-btn:hover { background: #f1f5f9; color: #1e293b; }
+        .notion-editor { min-height: 200px; outline: none; color: #334155; font-size: .9375rem; line-height: 1.6; }
+        .notion-editor[contenteditable]:empty:before { content: attr(data-placeholder); color: #94a3b8; pointer-events: none; display: block; }
         .notion-editor h1 { font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 1.25em 0 0.5em; }
         .notion-editor h2 { font-size: 1.25rem; font-weight: 600; color: #1e293b; margin: 1em 0 0.5em; }
         .notion-editor h3 { font-size: 1.125rem; font-weight: 600; color: #334155; margin: 0.75em 0 0.5em; }
@@ -238,53 +141,58 @@
         .notion-editor ul { padding-left: 1.5rem; margin: 0.5rem 0; }
         .notion-editor li { margin-bottom: 0.25rem; }
         .notion-editor p  { margin-bottom: 0.5rem; min-height: 1.5em; }
-        
-        /* Stile Checkbox Custom */
-        .notion-checkbox {
-            accent-color: #2563eb;
-            width: 1.125rem;
-            height: 1.125rem;
-            margin-right: 0.5rem;
-            transform: translateY(3px);
-            cursor: pointer;
-        }
+        .notion-checkbox { accent-color: #2563eb; width: 1.125rem; height: 1.125rem; margin-right: 0.5rem; transform: translateY(3px); cursor: pointer; }
 
-        /* ── Empty state ── */
+        /* ── Generiche ── */
         .empty { text-align: center; padding: 3rem 1rem; background: white; border-radius: .75rem; border: 2px dashed #cbd5e1; color: #64748b; }
-
-        /* ── Modal ── */
-        .overlay {
-            position: fixed; inset: 0; background: rgba(15,23,42,.5);
-            backdrop-filter: blur(4px); display: flex; align-items: center;
-            justify-content: center; padding: 1rem; z-index: 50;
-        }
+        .overlay { position: fixed; inset: 0; background: rgba(15,23,42,.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 50; }
         .modal { background: white; border-radius: 1rem; width: 100%; max-width: 28rem; box-shadow: 0 20px 60px rgba(0,0,0,.2); overflow: hidden; }
         .modal-hdr { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid #f1f5f9; }
         .modal-title { font-weight: 700; font-size: 1.125rem; color: #1e293b; }
         .modal-close { background: none; border: none; cursor: pointer; color: #94a3b8; padding: .25rem; border-radius: .25rem; transition: color .15s; }
         .modal-close:hover { color: #475569; }
         .modal-body { padding: 1rem; }
-
         .fg { margin-bottom: 1rem; }
         label { display: block; font-size: .875rem; font-weight: 500; color: #374151; margin-bottom: .25rem; }
-        .fi {
-            width: 100%; border: 1px solid #d1d5db; border-radius: .5rem;
-            padding: .5rem .75rem; font-size: .875rem; outline: none;
-            transition: border-color .2s, box-shadow .2s; font-family: inherit;
-        }
+        .fi { width: 100%; border: 1px solid #d1d5db; border-radius: .5rem; padding: .5rem .75rem; font-size: .875rem; outline: none; transition: border-color .2s, box-shadow .2s; font-family: inherit; }
         .fi:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
         .fhint { font-size: .75rem; color: #64748b; margin-top: .25rem; }
         .frow  { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
         .ffooter { display: flex; justify-content: flex-end; gap: .5rem; padding-top: 1rem; }
-
         .hidden { display: none !important; }
+        .loading-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<header id="hdr"></header>
-<main   id="mnt"></main>
+<div id="auth-screen">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="14" width="4" height="5" rx="1"/><rect x="15" y="8" width="4" height="11" rx="1"/></svg>
+        </div>
+        <h2 class="auth-title" id="auth-title-text">Accedi al Workspace</h2>
+        <p class="auth-sub" id="auth-sub-text">Inserisci i tuoi dati per continuare.</p>
+        
+        <div id="auth-error-msg" class="auth-error"></div>
 
+        <form id="auth-form" class="auth-form">
+            <div>
+                <label>Email</label>
+                <input type="email" id="auth-email" class="fi" required placeholder="mario@example.com">
+            </div>
+            <div>
+                <label>Password</label>
+                <input type="password" id="auth-password" class="fi" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-primary" id="auth-submit-btn" style="margin-top:.5rem; width:100%; padding: .75rem;">Accedi</button>
+        </form>
+        <button id="auth-toggle-btn" class="auth-toggle">Non hai un account? Registrati</button>
+    </div>
+</div>
+
+<header id="hdr" class="hidden"></header>
+<main   id="mnt" class="hidden"></main>
 <div id="overlay-sprint" class="overlay hidden"></div>
 
 <script>
@@ -300,8 +208,8 @@ const IC = {
     folder:    `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`,
     pen:       `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
     clock:     `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
-    
-    // Toolbar Icons
+    logout:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
+    loader:    `<svg class="loading-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>`,
     heading1:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="m17 12 3-2v8"/></svg>`,
     heading2:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1"/></svg>`,
     heading3:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2"/><path d="M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2c-1.2-.5-2.5 0-3 1"/></svg>`,
@@ -311,26 +219,145 @@ const IC = {
     separator: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/></svg>`
 };
 
-// ── State ────────────────────────────────────────────────────────────────────
-let S = {
-    sprints: [
-        { id:'s1', name:'Sprint Giugno (Esempio)', startDate:'2026-06-15', endDate:'2026-06-26', projects:['RCA','MEM','TW'] }
-    ],
-    activeSprintId: 's1',
-    projectDocs: {
-        'RCA': '<h1>Sviluppo Homepage e UI</h1><br><input type="checkbox" class="notion-checkbox" checked="checked"> Setup iniziale repository<br><input type="checkbox" class="notion-checkbox"> Definizione Design System<br><hr><p>Ricordarsi di allinearsi con il team marketing per le immagini hero.</p>',
-        'MEM': '<h2>Integrazione API</h2><ul><li>Creazione endpoint Login</li><li>Test sicurezza JWT</li></ul>',
-    },
-    gridLogs: {
-        's1': {
-            '2026-06-15_0':'RCA','2026-06-15_1':'RCA','2026-06-15_2':'RCA','2026-06-15_3':'RCA',
-            '2026-06-15_4':'RCA','2026-06-15_5':'RCA','2026-06-15_6':'MEM','2026-06-15_7':'MEM',
-            '2026-06-16_0':'MEM','2026-06-16_1':'MEM','2026-06-16_2':'RCA'
-        }
-    },
-    activeTab: 'kanban', 
-    activeWeekIndex: 0,
+// ── Integrazione Supabase ────────────────────────────────────────────────────
+// INSERISCI QUI I DATI DEL TUO PROGETTO SUPABASE
+const SUPABASE_URL = 'INSERISCI_QUI_IL_TUO_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'INSERISCI_QUI_LA_TUA_CHIAVE_ANONIMA';
+
+let supabase = null;
+if (window.supabase) {
+    try {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } catch(e) { console.error("Configura URL e Key di Supabase alla riga 802"); }
+}
+
+let currentUser = null;
+
+// Modello di base se l'utente è nuovo
+const DEFAULT_STATE = {
+    sprints: [],
+    activeSprintId: null,
+    projectDocs: {},
+    gridLogs: {},
+    activeTab: 'kanban',
+    activeWeekIndex: 0
 };
+
+// Stato Reale App
+let S = JSON.parse(JSON.stringify(DEFAULT_STATE));
+
+// Sistema di salvataggio ritardato (Debouncing) per non intasare il database a ogni lettera digitata
+let syncTimeout = null;
+async function syncToSupabase() {
+    if (!currentUser || !supabase) return;
+    
+    // Ripuliamo lo stato da elementi non persistenti (se necessario)
+    const stateToSave = JSON.parse(JSON.stringify(S)); 
+    
+    const { error } = await supabase.from('user_data').upsert({
+        user_id: currentUser.id,
+        app_state: stateToSave
+    });
+    
+    if (error) console.error("Errore salvataggio:", error);
+}
+
+function triggerSync() {
+    clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(syncToSupabase, 1500); // Salva 1.5 secondi dopo l'ultima modifica
+}
+
+// ── Auth UI Logic ────────────────────────────────────────────────────────────
+let isLoginMode = true;
+
+const authScreen = document.getElementById('auth-screen');
+const hdr = document.getElementById('hdr');
+const mnt = document.getElementById('mnt');
+const authForm = document.getElementById('auth-form');
+const authToggleBtn = document.getElementById('auth-toggle-btn');
+const authTitle = document.getElementById('auth-title-text');
+const authSub = document.getElementById('auth-sub-text');
+const authSubmitBtn = document.getElementById('auth-submit-btn');
+const authErrorMsg = document.getElementById('auth-error-msg');
+
+authToggleBtn.addEventListener('click', () => {
+    isLoginMode = !isLoginMode;
+    authTitle.textContent = isLoginMode ? "Accedi al Workspace" : "Crea un Account";
+    authSub.textContent = isLoginMode ? "Inserisci i tuoi dati per continuare." : "Inizia a tracciare i tuoi progetti agili.";
+    authSubmitBtn.textContent = isLoginMode ? "Accedi" : "Registrati";
+    authToggleBtn.textContent = isLoginMode ? "Non hai un account? Registrati" : "Hai già un account? Accedi";
+    authErrorMsg.style.display = 'none';
+});
+
+authForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if(!supabase) {
+        showError("Supabase non è configurato. Inserisci URL e Key nel codice HTML.");
+        return;
+    }
+
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+    authSubmitBtn.innerHTML = `${IC.loader} Attendi...`;
+    authSubmitBtn.disabled = true;
+    authErrorMsg.style.display = 'none';
+
+    let result;
+    if (isLoginMode) {
+        result = await supabase.auth.signInWithPassword({ email, password });
+    } else {
+        result = await supabase.auth.signUp({ email, password });
+    }
+
+    if (result.error) {
+        showError(result.error.message);
+        authSubmitBtn.textContent = isLoginMode ? "Accedi" : "Registrati";
+        authSubmitBtn.disabled = false;
+    } else {
+        // Il listener onAuthStateChange gestirà il passaggio successivo
+    }
+});
+
+function showError(msg) {
+    authErrorMsg.textContent = msg;
+    authErrorMsg.style.display = 'block';
+}
+
+async function handleLogout() {
+    if(!supabase) return;
+    await supabase.auth.signOut();
+}
+
+// Inizializza stato autenticazione
+if (supabase) {
+    supabase.auth.onAuthStateChange(async (event, session) => {
+        if (session && session.user) {
+            currentUser = session.user;
+            authScreen.style.display = 'none';
+            hdr.classList.remove('hidden');
+            mnt.classList.remove('hidden');
+            
+            // Carica i dati dell'utente dal db
+            const { data, error } = await supabase.from('user_data').select('app_state').eq('user_id', currentUser.id).single();
+            if (data && data.app_state) {
+                S = data.app_state;
+            } else {
+                // Primo accesso, inizializziamo la riga
+                S = JSON.parse(JSON.stringify(DEFAULT_STATE));
+                syncToSupabase();
+            }
+            render();
+        } else {
+            currentUser = null;
+            authScreen.style.display = 'flex';
+            hdr.classList.add('hidden');
+            mnt.classList.add('hidden');
+            document.getElementById('auth-password').value = '';
+            authSubmitBtn.textContent = isLoginMode ? "Accedi" : "Registrati";
+            authSubmitBtn.disabled = false;
+        }
+    });
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function sprint() { return S.sprints.find(s => s.id === S.activeSprintId); }
@@ -377,7 +404,6 @@ function getWeeks(startDate, endDate) {
     return weeks;
 }
 
-// ── Render helpers ───────────────────────────────────────────────────────────
 function h(el, html) { el.innerHTML = html; }
 
 // ── Main render ──────────────────────────────────────────────────────────────
@@ -396,7 +422,7 @@ function renderHeader() {
     if (past.length)   opts += `<optgroup label="Sprint Passati">${past.map(s => `<option value="${s.id}" ${s.id===S.activeSprintId?'selected':''}>${esc(s.name)}</option>`).join('')}</optgroup>`;
     if (!S.sprints.length) opts = '<option value="">Nessun sprint</option>';
 
-    h(document.getElementById('hdr'), `
+    h(hdr, `
         <div class="brand">
             <div class="brand-icon">${IC.chart}</div>
             <div>
@@ -407,21 +433,23 @@ function renderHeader() {
         <div class="header-right">
             <select class="sprint-select" id="sel-sprint">${opts}</select>
             <button class="btn btn-dark" id="btn-new-sprint">${IC.plus} Nuovo Sprint</button>
+            <button class="btn btn-logout" id="btn-logout" title="Esci dal profilo">${IC.logout}</button>
         </div>
     `);
 
     document.getElementById('sel-sprint').addEventListener('change', e => {
         S.activeSprintId = e.target.value;
         S.activeWeekIndex = 0;
+        triggerSync();
         render();
     });
     document.getElementById('btn-new-sprint').addEventListener('click', openSprintModal);
+    document.getElementById('btn-logout').addEventListener('click', handleLogout);
 }
 
 function renderMain() {
     const sp = sprint();
-    const mnt = document.getElementById('mnt');
-    if (!sp) { h(mnt, `<div class="empty"><p>Nessuno sprint selezionato. Creane uno nuovo!</p></div>`); return; }
+    if (!sp) { h(mnt, `<div class="empty"><p>Nessuno sprint selezionato. Creane uno nuovo per iniziare!</p></div>`); return; }
 
     const wdays = getWorkingDays(sp.startDate, sp.endDate);
     const gl = S.gridLogs[S.activeSprintId] || {};
@@ -478,13 +506,16 @@ function renderMain() {
         </div>
     `);
 
-    // Inizializza gli Event Listeners
     mnt.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => {
-        S.activeTab = b.dataset.tab; render();
+        S.activeTab = b.dataset.tab; 
+        triggerSync();
+        render();
     }));
 
     mnt.querySelectorAll('.week-btn').forEach(b => b.addEventListener('click', () => {
-        S.activeWeekIndex = +b.dataset.w; render();
+        S.activeWeekIndex = +b.dataset.w; 
+        triggerSync();
+        render();
     }));
 
     mnt.querySelectorAll('.cell-select').forEach(sel => sel.addEventListener('change', e => {
@@ -493,52 +524,43 @@ function renderMain() {
         if (!S.gridLogs[S.activeSprintId]) S.gridLogs[S.activeSprintId] = {};
         if (e.target.value === '') delete S.gridLogs[S.activeSprintId][key];
         else S.gridLogs[S.activeSprintId][key] = e.target.value;
+        triggerSync();
         render();
     }));
 
-    // Inizializza gli editor Markdown e Toolbar
     setupNotionEditors();
 }
 
-// ── Motore Editor Markdown e Toolbar ──────────────────────────────────────────
 function setupNotionEditors() {
-    
-    // Configura la Toolbar
     document.querySelectorAll('.toolbar-btn').forEach(btn => {
-        // Previene la perdita del focus dell'editor quando si clicca il pulsante
         btn.addEventListener('mousedown', e => e.preventDefault());
-        
         btn.addEventListener('click', e => {
             const cmd = btn.dataset.cmd;
             const val = btn.dataset.val || null;
             document.execCommand(cmd, false, val);
-            
-            // Trova l'editor associato a questa toolbar e salva lo stato
             const editor = btn.closest('.workspace-group').querySelector('.notion-editor');
             if (editor) {
                 S.projectDocs[editor.dataset.proj] = editor.innerHTML;
+                triggerSync();
             }
         });
     });
 
-    // Configura gli Editor
     document.querySelectorAll('.notion-editor').forEach(ed => {
-        
-        // Salva i dati ad ogni modifica
         ed.addEventListener('input', () => {
             S.projectDocs[ed.dataset.proj] = ed.innerHTML;
+            triggerSync();
         });
         
-        // Listener per le checkbox fisiche
         ed.addEventListener('change', e => {
             if (e.target.tagName === 'INPUT' && e.target.type === 'checkbox') {
                 if (e.target.checked) e.target.setAttribute('checked', 'checked');
                 else e.target.removeAttribute('checked');
                 S.projectDocs[ed.dataset.proj] = ed.innerHTML;
+                triggerSync();
             }
         });
 
-        // Intercetta Spazio per triggerare i comandi Markdown (opzionale)
         ed.addEventListener('keyup', e => {
             if (e.key === ' ') {
                 const sel = window.getSelection();
@@ -701,17 +723,19 @@ function openSprintModal() {
         S.activeSprintId = newSprint.id;
         S.activeWeekIndex = 0;
         el.classList.add('hidden');
+        triggerSync();
         render();
     };
 }
 
-// ── Safety ───────────────────────────────────────────────────────────────────
 function esc(str) {
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── Boot ─────────────────────────────────────────────────────────────────────
-render();
+// Se non c'è supabase, eseguiamo un render vuoto per mostrare l'errore o il loader
+if(!supabase) {
+    render();
+}
 </script>
 </body>
 </html>
