@@ -441,11 +441,19 @@ if (sb) {
             
             // Carica i dati dell'utente dal db
             const { data, error } = await sb.from('user_data').select('app_state').eq('user_id', currentUser.id).maybeSingle();
-            if (data && data.app_state) {
-                S = data.app_state;
-            } else {
-                // Primo accesso, inizializziamo la riga
-                S = JSON.parse(JSON.stringify(DEFAULT_STATE));
+            if (error) console.error("Errore caricamento dati:", error);
+
+            const saved = (data && data.app_state) ? data.app_state : {};
+            // Uniamo i dati salvati SOPRA allo stato di default: così i campi
+            // mancanti (es. sprints, gridLogs) esistono sempre e render() non va in crash.
+            S = Object.assign(JSON.parse(JSON.stringify(DEFAULT_STATE)), saved);
+            // Garantiamo i tipi corretti anche se il dato salvato è parziale o corrotto
+            if (!Array.isArray(S.sprints))    S.sprints = [];
+            if (typeof S.projectDocs !== 'object' || S.projectDocs === null) S.projectDocs = {};
+            if (typeof S.gridLogs    !== 'object' || S.gridLogs    === null) S.gridLogs = {};
+
+            // Se non c'era ancora nessuna riga salvata, la creiamo ora
+            if (!data || !data.app_state || Object.keys(saved).length === 0) {
                 syncToSupabase();
             }
             render();
