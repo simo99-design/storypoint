@@ -450,36 +450,44 @@ window._resetApp = function() {
 window.addEventListener('error', e => showFatal('Errore JavaScript', e.error || e));
 window.addEventListener('unhandledrejection', e => showFatal('Errore (promise non gestita)', e.reason || e));
 
+// Carica i dati dell'utente e disegna l'app.
+// IMPORTANTE: viene chiamata FUORI dalla callback di onAuthStateChange (con setTimeout),
+// perché chiamare sb.from()/altre funzioni Supabase DENTRO quella callback causa un deadlock
+// e al reload (evento INITIAL_SESSION) la pagina resterebbe bloccata sul login.
+async function loadUserDataAndRender() {
+    try {
+        const { data, error } = await sb.from('user_data').select('app_state').eq('user_id', currentUser.id).maybeSingle();
+        if (error) console.error("Errore caricamento dati:", error);
+
+        const saved = (data && data.app_state && typeof data.app_state === 'object') ? data.app_state : {};
+        // Uniamo i dati salvati SOPRA allo stato di default: così i campi
+        // mancanti (es. sprints, gridLogs) esistono sempre e render() non va in crash.
+        S = Object.assign(JSON.parse(JSON.stringify(DEFAULT_STATE)), saved);
+        // Garantiamo i tipi corretti anche se il dato salvato è parziale o corrotto
+        if (!Array.isArray(S.sprints))    S.sprints = [];
+        if (typeof S.projectDocs !== 'object' || S.projectDocs === null) S.projectDocs = {};
+        if (typeof S.gridLogs    !== 'object' || S.gridLogs    === null) S.gridLogs = {};
+
+        // Se non c'era ancora nessuna riga salvata, la creiamo ora
+        if (!data || !data.app_state || Object.keys(saved).length === 0) {
+            syncToSupabase();
+        }
+        render();
+    } catch (err) {
+        showFatal('Errore di avvio', err);
+    }
+}
+
 if (sb) {
-    sb.auth.onAuthStateChange(async (event, session) => {
+    sb.auth.onAuthStateChange((event, session) => {
         if (session && session.user) {
             currentUser = session.user;
-            try {
-                // Carica i dati dell'utente dal db
-                const { data, error } = await sb.from('user_data').select('app_state').eq('user_id', currentUser.id).maybeSingle();
-                if (error) console.error("Errore caricamento dati:", error);
-
-                const saved = (data && data.app_state && typeof data.app_state === 'object') ? data.app_state : {};
-                // Uniamo i dati salvati SOPRA allo stato di default: così i campi
-                // mancanti (es. sprints, gridLogs) esistono sempre e render() non va in crash.
-                S = Object.assign(JSON.parse(JSON.stringify(DEFAULT_STATE)), saved);
-                // Garantiamo i tipi corretti anche se il dato salvato è parziale o corrotto
-                if (!Array.isArray(S.sprints))    S.sprints = [];
-                if (typeof S.projectDocs !== 'object' || S.projectDocs === null) S.projectDocs = {};
-                if (typeof S.gridLogs    !== 'object' || S.gridLogs    === null) S.gridLogs = {};
-
-                // Se non c'era ancora nessuna riga salvata, la creiamo ora
-                if (!data || !data.app_state || Object.keys(saved).length === 0) {
-                    syncToSupabase();
-                }
-
-                authScreen.style.display = 'none';
-                hdr.classList.remove('hidden');
-                mnt.classList.remove('hidden');
-                render();
-            } catch (err) {
-                showFatal('Errore di avvio', err);
-            }
+            // Aggiorniamo subito la UI (sincrono), così il login sparisce immediatamente
+            authScreen.style.display = 'none';
+            hdr.classList.remove('hidden');
+            mnt.classList.remove('hidden');
+            // Carichiamo i dati FUORI dalla callback per evitare il deadlock di Supabase
+            setTimeout(loadUserDataAndRender, 0);
         } else {
             currentUser = null;
             authScreen.style.display = 'flex';
