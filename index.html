@@ -431,32 +431,55 @@ async function handleLogout() {
 }
 
 // Inizializza stato autenticazione
+// Mostra a schermo qualsiasi errore non gestito, invece di lasciare la pagina bianca
+function showFatal(label, err) {
+    console.error(label, err);
+    const msg = (err && (err.message || err.reason && err.reason.message)) || String(err);
+    hdr.classList.add('hidden');
+    mnt.classList.remove('hidden');
+    mnt.innerHTML = `<div class="empty"><p><b>${label}</b></p>
+        <p style="margin-top:.5rem;font-size:.8125rem;color:#ef4444;word-break:break-word">${esc(msg)}</p>
+        <button class="btn btn-primary" style="margin-top:1rem" onclick="window._resetApp()">Resetta sessione e ricarica</button></div>`;
+    authScreen.style.display = 'none';
+}
+window._resetApp = function() {
+    try { localStorage.clear(); } catch(e) {}
+    if (sb) sb.auth.signOut().finally(() => location.reload());
+    else location.reload();
+};
+window.addEventListener('error', e => showFatal('Errore JavaScript', e.error || e));
+window.addEventListener('unhandledrejection', e => showFatal('Errore (promise non gestita)', e.reason || e));
+
 if (sb) {
     sb.auth.onAuthStateChange(async (event, session) => {
         if (session && session.user) {
             currentUser = session.user;
-            authScreen.style.display = 'none';
-            hdr.classList.remove('hidden');
-            mnt.classList.remove('hidden');
-            
-            // Carica i dati dell'utente dal db
-            const { data, error } = await sb.from('user_data').select('app_state').eq('user_id', currentUser.id).maybeSingle();
-            if (error) console.error("Errore caricamento dati:", error);
+            try {
+                // Carica i dati dell'utente dal db
+                const { data, error } = await sb.from('user_data').select('app_state').eq('user_id', currentUser.id).maybeSingle();
+                if (error) console.error("Errore caricamento dati:", error);
 
-            const saved = (data && data.app_state) ? data.app_state : {};
-            // Uniamo i dati salvati SOPRA allo stato di default: così i campi
-            // mancanti (es. sprints, gridLogs) esistono sempre e render() non va in crash.
-            S = Object.assign(JSON.parse(JSON.stringify(DEFAULT_STATE)), saved);
-            // Garantiamo i tipi corretti anche se il dato salvato è parziale o corrotto
-            if (!Array.isArray(S.sprints))    S.sprints = [];
-            if (typeof S.projectDocs !== 'object' || S.projectDocs === null) S.projectDocs = {};
-            if (typeof S.gridLogs    !== 'object' || S.gridLogs    === null) S.gridLogs = {};
+                const saved = (data && data.app_state && typeof data.app_state === 'object') ? data.app_state : {};
+                // Uniamo i dati salvati SOPRA allo stato di default: così i campi
+                // mancanti (es. sprints, gridLogs) esistono sempre e render() non va in crash.
+                S = Object.assign(JSON.parse(JSON.stringify(DEFAULT_STATE)), saved);
+                // Garantiamo i tipi corretti anche se il dato salvato è parziale o corrotto
+                if (!Array.isArray(S.sprints))    S.sprints = [];
+                if (typeof S.projectDocs !== 'object' || S.projectDocs === null) S.projectDocs = {};
+                if (typeof S.gridLogs    !== 'object' || S.gridLogs    === null) S.gridLogs = {};
 
-            // Se non c'era ancora nessuna riga salvata, la creiamo ora
-            if (!data || !data.app_state || Object.keys(saved).length === 0) {
-                syncToSupabase();
+                // Se non c'era ancora nessuna riga salvata, la creiamo ora
+                if (!data || !data.app_state || Object.keys(saved).length === 0) {
+                    syncToSupabase();
+                }
+
+                authScreen.style.display = 'none';
+                hdr.classList.remove('hidden');
+                mnt.classList.remove('hidden');
+                render();
+            } catch (err) {
+                showFatal('Errore di avvio', err);
             }
-            render();
         } else {
             currentUser = null;
             authScreen.style.display = 'flex';
