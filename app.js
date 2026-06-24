@@ -44,6 +44,7 @@ const DEFAULT_STATE = {
     projectDocs: {},
     gridLogs: {},
     projectColors: {},
+    activeProject: null,
     activeTab: 'kanban',
     activeWeekIndex: 0
 };
@@ -457,6 +458,13 @@ function renderMain() {
     const editBtn = document.getElementById('btn-edit-sprint');
     if (editBtn) editBtn.addEventListener('click', () => openSprintModal(sp));
 
+    const selProj = document.getElementById('sel-project');
+    if (selProj) selProj.addEventListener('change', e => {
+        S.activeProject = e.target.value;
+        triggerSync();
+        render();
+    });
+
     mnt.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => {
         S.activeTab = b.dataset.tab;
         triggerSync();
@@ -542,39 +550,50 @@ function setupNotionEditors() {
     });
 }
 
+const EDITOR_TOOLBAR = `
+    <div class="editor-toolbar">
+        <button class="toolbar-btn" data-cmd="formatBlock" data-val="H1" title="Titolo Grande (H1)">${IC.heading1}</button>
+        <button class="toolbar-btn" data-cmd="formatBlock" data-val="H2" title="Titolo Medio (H2)">${IC.heading2}</button>
+        <button class="toolbar-btn" data-cmd="formatBlock" data-val="H3" title="Titolo Piccolo (H3)">${IC.heading3}</button>
+        <div class="toolbar-divider"></div>
+        <button class="toolbar-btn" data-cmd="formatBlock" data-val="P" title="Testo normale">${IC.paragraph}</button>
+        <button class="toolbar-btn" data-cmd="insertUnorderedList" title="Elenco puntato">${IC.list}</button>
+        <button class="toolbar-btn" data-cmd="insertHTML" data-val="<input type='checkbox' class='notion-checkbox'>&nbsp;" title="Checkbox interattiva">${IC.checkList}</button>
+        <div class="toolbar-divider"></div>
+        <button class="toolbar-btn" data-cmd="insertHorizontalRule" title="Linea di divisione">${IC.separator}</button>
+    </div>`;
+
+function projCardHtml(proj, single) {
+    const content = S.projectDocs[proj] || '';
+    const col = projColor(proj);
+    return `
+        <div class="workspace-group${single ? ' workspace-single' : ''}" style="border-left:3px solid ${col}">
+            <div class="wg-header">
+                <h3 class="wg-title"><span style="color:${col};display:flex">${IC.folder}</span> ${esc(proj)}
+                    <input type="color" class="proj-color" data-proj="${esc(proj)}" value="${col}" title="Colore progetto">
+                </h3>
+                ${EDITOR_TOOLBAR}
+            </div>
+            <div class="notion-editor" contenteditable="true" data-proj="${esc(proj)}" data-placeholder="Inizia a scrivere qui per il progetto ${esc(proj)}...">
+                ${content}
+            </div>
+        </div>
+    `;
+}
+
 function renderWorkspace(sp, allProj) {
     if (!allProj.length) return `<div class="empty"><p>Non ci sono progetti assegnati a questo sprint.</p></div>`;
 
-    const listHtml = allProj.map(proj => {
-        const content = S.projectDocs[proj] || '';
-        const col = projColor(proj);
-        return `
-            <div class="workspace-group" style="border-left:3px solid ${col}">
-                <div class="wg-header">
-                    <h3 class="wg-title"><span style="color:${col};display:flex">${IC.folder}</span> ${esc(proj)}
-                        <input type="color" class="proj-color" data-proj="${esc(proj)}" value="${col}" title="Colore progetto">
-                    </h3>
-                    <div class="editor-toolbar">
-                        <button class="toolbar-btn" data-cmd="formatBlock" data-val="H1" title="Titolo Grande (H1)">${IC.heading1}</button>
-                        <button class="toolbar-btn" data-cmd="formatBlock" data-val="H2" title="Titolo Medio (H2)">${IC.heading2}</button>
-                        <button class="toolbar-btn" data-cmd="formatBlock" data-val="H3" title="Titolo Piccolo (H3)">${IC.heading3}</button>
-                        <div class="toolbar-divider"></div>
-                        <button class="toolbar-btn" data-cmd="formatBlock" data-val="P" title="Testo normale">${IC.paragraph}</button>
-                        <button class="toolbar-btn" data-cmd="insertUnorderedList" title="Elenco puntato">${IC.list}</button>
-                        <button class="toolbar-btn" data-cmd="insertHTML" data-val="<input type='checkbox' class='notion-checkbox'>&nbsp;" title="Checkbox interattiva">${IC.checkList}</button>
-                        <div class="toolbar-divider"></div>
-                        <button class="toolbar-btn" data-cmd="insertHorizontalRule" title="Linea di divisione">${IC.separator}</button>
-                    </div>
-                </div>
+    const proj = allProj.includes(S.activeProject) ? S.activeProject : allProj[0];
 
-                <div class="notion-editor" contenteditable="true" data-proj="${esc(proj)}" data-placeholder="Inizia a scrivere qui per il progetto ${esc(proj)}...">
-                    ${content}
-                </div>
-            </div>
-        `;
-    }).join('');
+    const select = `
+        <select class="sprint-select" id="sel-project">
+            ${allProj.map(p => `<option value="${esc(p)}"${p === proj ? ' selected' : ''}>${esc(p)}</option>`).join('')}
+        </select>`;
 
-    return `<div class="workspace-grid">${listHtml}</div>`;
+    const header = `<div class="sec-hdr"><h2 class="sec-title">${IC.folder} Workspace progetti</h2>${select}</div>`;
+
+    return header + projCardHtml(proj, true);
 }
 
 function renderCalendarInner(sp, weeks, gl, allProj) {
