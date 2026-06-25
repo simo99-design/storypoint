@@ -3,6 +3,12 @@
    ============================================================ */
 'use strict';
 
+// ---- Supabase --------------------------------------------------------------
+const SUPABASE_URL = 'https://gztmjoqtvwodfsydtzny.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6dG1qb3F0dndvZGZzeWR0em55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4Nzg2NzcsImV4cCI6MjA5NzQ1NDY3N30.kritne2-PDgCSwXXy0XzWxJ80i7egNYCm4tx7G3Bjws';
+const sb = window.supabase && window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+let currentUser = null;
+
 // ---- Project registry ------------------------------------------------------
 const PROJECTS = {
   RCA: { name: 'RCA', color: '#0057FF', ink: '#FAF7EB', title: 'Restyle Cliente A',
@@ -208,10 +214,12 @@ function cycleCell(key) {
   if (next) state.grid[key] = next; else delete state.grid[key];
   renderCalendar();
   renderMetrics();
+  scheduleSave();
 }
 
 // ---- Render: workspace -----------------------------------------------------
 function renderWorkspace() {
+  if (!PROJECTS[state.activeProject]) state.activeProject = ORDER[0];
   const p = PROJECTS[state.activeProject];
   $('#projectSelect').value = state.activeProject;
   $('#apHeading').textContent = `${p.name} — ${p.title}`;
@@ -233,6 +241,7 @@ function renderWorkspace() {
     row.addEventListener('click', () => {
       p.checks[i].done = !p.checks[i].done;
       renderWorkspace();
+      scheduleSave();
     });
     list.appendChild(row);
   });
@@ -272,12 +281,93 @@ function openModal(edit) {
 }
 function closeModal() { $('#overlay').classList.add('is-hidden'); }
 
-// ---- Bootstrap -------------------------------------------------------------
-document.addEventListener('DOMContentLoaded', () => {
+// ---- Persistenza (Supabase) ------------------------------------------------
+function serializeState() {
+  const projects = {};
+  ORDER.forEach((c) => { projects[c] = { doc: PROJECTS[c].doc, checks: PROJECTS[c].checks }; });
+  return { grid: state.grid, activeProject: state.activeProject, projects };
+}
+function applyState(data) {
+  if (!data) return;                                  // ignora schemi legacy/incompatibili
+  if (data.grid && typeof data.grid === 'object') state.grid = data.grid;
+  if (ORDER.includes(data.activeProject)) state.activeProject = data.activeProject;
+  if (data.projects) ORDER.forEach((c) => {
+    const p = data.projects[c];
+    if (p) { if (p.doc != null) PROJECTS[c].doc = p.doc; if (p.checks) PROJECTS[c].checks = p.checks; }
+  });
+}
+
+let saveTimer = null;
+function scheduleSave() {
+  if (!currentUser) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    await sb.from('user_data').upsert({ user_id: currentUser.id, app_state: serializeState() });
+  }, 600);
+}
+async function loadState() {
+  const { data } = await sb.from('user_data').select('app_state').eq('user_id', currentUser.id).maybeSingle();
+  applyState(data && data.app_state);
+}
+
+function renderAll() {
   fillProjectSelect();
   renderMetrics();
   renderCalendar();
   renderWorkspace();
+}
+
+// ---- Auth ------------------------------------------------------------------
+function showAuth() {
+  currentUser = null;
+  $('#appShell').hidden = true;
+  $('#authOverlay').classList.remove('is-hidden');
+}
+async function showApp(user) {
+  currentUser = user;
+  try { await loadState(); } catch (e) { console.error('loadState', e); }   // i dati non devono bloccare il login
+  renderAll();
+  $('#authOverlay').classList.add('is-hidden');
+  $('#appShell').hidden = false;
+}
+let authMode = 'signin';
+function setAuthMode(mode) {
+  authMode = mode;
+  const signup = mode === 'signup';
+  $('#authTitle').textContent      = signup ? 'Registrati' : 'Accedi';
+  $('#btnAuthSubmit').textContent  = signup ? 'Registrati' : 'Accedi';
+  $('#btnAuthSwitch').textContent  = signup ? 'Hai già un account? Accedi' : 'Non hai un account? Registrati';
+  $('#authMsg').textContent = '';
+}
+async function handleAuth() {
+  const email = $('#authEmail').value.trim();
+  const password = $('#authPassword').value;
+  const msg = $('#authMsg');
+  msg.textContent = '';
+  if (!email || !password) { msg.textContent = 'Inserisci email e password.'; return; }
+  $('#btnAuthSubmit').disabled = true;
+  try {
+    const fn = authMode === 'signup' ? 'signUp' : 'signInWithPassword';
+    const { data, error } = await sb.auth[fn]({ email, password });
+    if (error) { msg.textContent = error.message; return; }
+    if (!data.session) { msg.textContent = 'Controlla la mail per confermare la registrazione.'; return; }
+    await showApp(data.session.user);
+  } catch (e) {
+    msg.textContent = 'Errore: ' + (e && e.message ? e.message : e);
+    console.error('handleAuth', e);
+  } finally {
+    $('#btnAuthSubmit').disabled = false;
+  }
+}
+
+// ---- Bootstrap -------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!sb) { $('#authMsg').textContent = 'Errore: libreria Supabase non caricata.'; return; }
+
+  $('#btnAuthSubmit').addEventListener('click', () => handleAuth());
+  $('#btnAuthSwitch').addEventListener('click', () => setAuthMode(authMode === 'signup' ? 'signin' : 'signup'));
+  $('#authPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') handleAuth(); });
+  $('#btnLogout').addEventListener('click', async () => { await sb.auth.signOut(); setAuthMode('signin'); showAuth(); });
 
   document.querySelectorAll('.tab').forEach((t) =>
     t.addEventListener('click', () => setTab(t.dataset.tab)));
@@ -285,6 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('#projectSelect').addEventListener('change', (e) => {
     state.activeProject = e.target.value;
     renderWorkspace();
+    scheduleSave();
   });
 
   // toolbar di formattazione: execCommand è deprecato ma è il modo nativo,
@@ -300,6 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // salva le modifiche del documento sul progetto attivo
   $('#wsDoc').addEventListener('input', () => {
     PROJECTS[state.activeProject].doc = $('#wsDoc').innerHTML;
+    scheduleSave();
   });
 
   // ponytail: lo sprint select aggiorna solo le etichette; un solo sprint ha dati reali.
@@ -314,4 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('#btnSubmit').addEventListener('click', closeModal);
   $('#overlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+  const { data } = await sb.auth.getSession();
+  if (data.session) showApp(data.session.user); else showAuth();
 });

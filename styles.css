@@ -286,6 +286,10 @@ body {
 .modal-grid .modal-input { margin-bottom: 0; }
 .modal-grid + .modal-lab { margin-top: 18px; }
 .modal-hint { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: #6f6e68; margin-top: 8px; }
+#authMsg { font-size: 12px; text-transform: none; letter-spacing: 0; color: #ff6b6b; min-height: 16px; margin: 0 0 4px; }
+.auth-wrap { display: flex; flex-direction: column; align-items: center; gap: 18px; width: 100%; max-width: 24rem; }
+.auth-brand { font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; color: var(--cream); text-align: center; }
+.auth-wrap .modal { width: 100%; }
 .modal-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
 .btn-ghost { padding: 12px 18px; border: none; border-radius: 11px; background: transparent; font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); cursor: pointer; transition: color .15s ease; }
 .btn-ghost:hover { color: var(--cream); }

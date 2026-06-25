@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="shell">
+  <div class="shell" id="appShell" hidden>
     <div class="app">
 
       <!-- HEADER -->
@@ -34,7 +34,7 @@
           <button class="btn-primary mono" id="btnNewSprint">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuovo Sprint
           </button>
-          <button class="icon-btn" title="Esci">
+          <button class="icon-btn" id="btnLogout" title="Esci">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           </button>
         </div>
@@ -172,6 +172,30 @@
     </div>
   </div>
 
+  <!-- AUTH -->
+  <div class="overlay" id="authOverlay">
+    <div class="auth-wrap">
+    <div class="auth-brand">Storypoints Workspace</div>
+    <div class="modal" style="max-width:24rem">
+      <div class="modal-head">
+        <div class="modal-title" id="authTitle">Accedi</div>
+      </div>
+      <div class="modal-body">
+        <label class="modal-lab mono">Email</label>
+        <input class="modal-input" id="authEmail" type="email" autocomplete="email" placeholder="tu@esempio.it">
+        <label class="modal-lab mono">Password</label>
+        <input class="modal-input" id="authPassword" type="password" autocomplete="current-password" placeholder="••••••••">
+        <div class="modal-hint" id="authMsg"></div>
+        <div class="modal-foot" style="flex-direction:column; gap:8px">
+          <button class="btn-primary mono" id="btnAuthSubmit" style="width:100%; justify-content:center">Accedi</button>
+          <button class="btn-ghost mono" id="btnAuthSwitch" style="width:100%">Non hai un account? Registrati</button>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <script src="supabase.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
