@@ -27,6 +27,18 @@ const state = {
   activeSprintId: null,
 };
 let editingSprint = null;   // sprint in modifica nella modale, null = nuovo
+let pmDragging = null;      // riga progetto trascinata (drag & drop)
+
+function pmDragAfter(container, y) {
+  const rows = [...container.querySelectorAll('.pm-row:not(.dragging)')];
+  let best = { offset: -Infinity, el: null };
+  rows.forEach((child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > best.offset) best = { offset, el: child };
+  });
+  return best.el;
+}
 
 // ---- Helpers ---------------------------------------------------------------
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -61,7 +73,7 @@ function getWeeks(start, end) {
   let guard = 0;
   while (mon <= e && guard++ < 60) {
     const days = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 5; i++) {                        // Lun–Ven (no sabato)
       const d = new Date(mon); d.setDate(mon.getDate() + i);
       days.push({ date: ymd(d), dow: DOW[d.getDay()], dd: String(d.getDate()).padStart(2, '0'), mon: MONTHS[d.getMonth()] });
     }
@@ -88,6 +100,13 @@ function fmtRange(s, e) {
   return `${f.format(noon(s))} – ${fy.format(noon(e))}`;
 }
 
+function isWeekday(dateStr) { const d = noon(dateStr).getDay(); return d !== 0 && d !== 6; }
+function cleanGrid(grid) {                               // rimuove ore di sabato/domenica
+  Object.keys(grid).forEach((k) => {
+    const date = k.slice(0, k.lastIndexOf('-'));
+    if (!isWeekday(date)) delete grid[k];
+  });
+}
 function sprint() { return state.sprints.find((s) => s.id === state.activeSprintId) || null; }
 function countByProject(sp) {
   const counts = {};
@@ -135,8 +154,9 @@ function renderMetrics() {
   const logged = sp ? Object.keys(sp.grid).length : 0;   // 1 cella = 1 ora
   const pct = capH ? Math.min(100, Math.round(logged / capH * 100)) : 0;
 
-  $('#spNum').textContent  = fmtSP(logged / 8);          // 8h = 1 SP
-  $('#spTot').textContent  = `/ ${wd} SP`;
+  const plannedSP = sp ? sp.order.reduce((a, c) => a + (sp.projects[c].sp || 0), 0) : 0;
+  $('#spNum').textContent  = fmtSP(logged / 8);          // 8h = 1 SP (fatti)
+  $('#spTot').textContent  = `/ ${fmtSP(plannedSP)} SP`; // SP pianificati
   $('#loggedH').textContent = logged;
   $('#capH').textContent   = capH;
   $('#capLab').textContent = `Ore / ${capH}`;
@@ -161,12 +181,15 @@ function renderMetrics() {
   sp.order.forEach((code) => {
     const p = sp.projects[code];
     const hrs = counts[code];
+    const doneSP = hrs / 8;
+    const planned = p.sp || 0;
+    const width = planned ? Math.min(100, doneSP / planned * 100) : 0;
     const row = document.createElement('div');
     row.className = 'sp-row';
     row.innerHTML =
       `<div class="sp-name"><span class="sp-dot" style="background:${p.color}"></span>${esc(p.name)}</div>` +
-      `<div class="sp-bar-track"><div class="sp-bar-fill" style="width:${capH ? Math.min(100, hrs / capH * 100) : 0}%;background:${p.color}"></div></div>` +
-      `<div class="sp-val"><b>${fmtSP(hrs / 8)} SP</b> <span class="dim">· ${hrs}h</span></div>`;
+      `<div class="sp-bar-track"><div class="sp-bar-fill" style="width:${width}%;background:${p.color}"></div></div>` +
+      `<div class="sp-val"><b>${fmtSP(doneSP)}</b><span class="dim"> / ${fmtSP(planned)} SP · ${hrs}h</span></div>`;
     spList.appendChild(row);
   });
 
@@ -273,7 +296,7 @@ function renderWorkspace() {
   if (!sp.projects[state.activeProject]) state.activeProject = sp.order[0];
   const p = sp.projects[state.activeProject];
   $('#projectSelect').value = state.activeProject;
-  $('#apHeading').textContent = p.title ? `${p.name} — ${p.title}` : p.name;
+  $('#apHeading').textContent = p.sp ? `${p.name} — ${fmtSP(p.sp)} SP` : p.name;
   $('#apIcon').setAttribute('stroke', p.color);
   $('#wsCard').style.borderTopColor = p.color;
   $('#wsDoc').innerHTML = p.doc;
@@ -334,11 +357,19 @@ function pmRow(code, proj) {
   div.dataset.orig = code || '';
   const color = proj ? proj.color : PALETTE[document.querySelectorAll('.pm-row').length % PALETTE.length];
   div.innerHTML =
+    `<div class="pm-handle" draggable="true" title="Trascina per riordinare">⠿</div>` +
     `<input type="color" class="pm-color" value="${color}">` +
     `<input type="text" class="pm-code" maxlength="8" placeholder="Sigla" value="${code ? esc(code) : ''}">` +
-    `<input type="text" class="pm-title" placeholder="Nome progetto" value="${proj ? esc(proj.title) : ''}">` +
-    `<button class="pm-del" title="Elimina progetto">&times;</button>`;
+    `<input type="number" class="pm-sp" min="0" step="0.5" placeholder="SP" value="${proj && proj.sp != null ? proj.sp : ''}">` +
+    `<button type="button" class="pm-del" title="Elimina progetto">&times;</button>`;
   div.querySelector('.pm-del').addEventListener('click', () => div.remove());
+  const handle = div.querySelector('.pm-handle');
+  handle.addEventListener('dragstart', (e) => {
+    pmDragging = div; div.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', '');
+  });
+  handle.addEventListener('dragend', () => { div.classList.remove('dragging'); pmDragging = null; });
   return div;
 }
 
@@ -368,11 +399,11 @@ function readProjectRows(old) {
   document.querySelectorAll('.pm-row').forEach((r) => {
     const code = r.querySelector('.pm-code').value.trim().toUpperCase();
     if (!code || projects[code]) return;
-    const title = r.querySelector('.pm-title').value.trim();
+    const sp = parseFloat(r.querySelector('.pm-sp').value) || 0;
     const color = r.querySelector('.pm-color').value;
     const orig = r.dataset.orig || '';
     const src = orig && old[orig] ? old[orig] : null;
-    projects[code] = { name: code, title, color, ink: inkFor(color), doc: src ? src.doc : '', checks: src ? src.checks : [] };
+    projects[code] = { name: code, sp, color, ink: inkFor(color), doc: src ? src.doc : '', checks: src ? src.checks : [] };
     order.push(code);
     if (orig && orig !== code) rename[orig] = code;
   });
@@ -437,7 +468,7 @@ function normalizeProjects(rawProjects, rawOrder) {
     const p = rawProjects[c] || {};
     const color = p.color || PALETTE[i % PALETTE.length];
     projects[c] = {
-      name: c, title: p.title || '', color, ink: p.ink || inkFor(color),
+      name: c, sp: typeof p.sp === 'number' ? p.sp : 0, color, ink: p.ink || inkFor(color),
       doc: p.doc || '', checks: Array.isArray(p.checks) ? p.checks : [],
     };
   });
@@ -456,6 +487,7 @@ function migrateLegacy(d) {
   });
   const { projects, order } = normalizeProjects(d.projects || {}, d.order);
   Object.keys(grid).forEach((k) => { if (!projects[grid[k]]) delete grid[k]; });
+  cleanGrid(grid);
   return { id: 's-legacy', name: 'Sprint Giugno', startDate: '2025-06-02', endDate: '2025-06-27', projects, order, grid };
 }
 function applyState(d) {
@@ -467,6 +499,7 @@ function applyState(d) {
       const { projects, order } = normalizeProjects(s.projects || {}, s.order);
       const grid = (s.grid && typeof s.grid === 'object') ? s.grid : {};
       Object.keys(grid).forEach((k) => { if (!projects[grid[k]]) delete grid[k]; });
+      cleanGrid(grid);
       return { id: s.id || ('s-' + Math.random().toString(36).slice(2)), name: s.name || 'Sprint',
                startDate: s.startDate || '', endDate: s.endDate || '', projects, order, grid };
     });
@@ -515,6 +548,7 @@ async function showApp(user) {
   currentUser = user;
   try { await loadState(); } catch (e) { console.error('loadState', e); }
   renderAll();
+  scheduleSave();   // persiste lo stato ripulito (es. ore weekend rimosse)
   $('#authOverlay').classList.add('is-hidden');
   $('#appShell').hidden = false;
 }
@@ -595,6 +629,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const row = pmRow('', null);
     $('#pmList').appendChild(row);
     row.querySelector('.pm-code').focus();
+  });
+  $('#pmList').addEventListener('dragover', (e) => {
+    if (!pmDragging) return;
+    e.preventDefault();
+    const after = pmDragAfter($('#pmList'), e.clientY);
+    if (after == null) $('#pmList').appendChild(pmDragging);
+    else $('#pmList').insertBefore(pmDragging, after);
   });
   $('#btnSubmit').addEventListener('click', saveSprint);
   $('#btnDeleteSprint').addEventListener('click', deleteSprint);
