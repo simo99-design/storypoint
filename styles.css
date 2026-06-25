@@ -290,6 +290,19 @@ body {
 .auth-wrap { display: flex; flex-direction: column; align-items: center; gap: 18px; width: 100%; max-width: 24rem; }
 .auth-brand { font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; color: var(--cream); text-align: center; }
 .auth-wrap .modal { width: 100%; }
+/* ---------- gestione progetti (modale) ---------- */
+.pm-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.pm-row { display: grid; grid-template-columns: 40px 84px 1fr 34px; gap: 8px; align-items: center; }
+.pm-color { width: 40px; height: 40px; padding: 0; border: 1px solid var(--border); border-radius: 10px; background: var(--panel-2); cursor: pointer; }
+.pm-color::-webkit-color-swatch-wrapper { padding: 3px; }
+.pm-color::-webkit-color-swatch { border: none; border-radius: 7px; }
+.pm-color::-moz-color-swatch { border: none; border-radius: 7px; }
+.pm-row .pm-code, .pm-row .pm-title { background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 11px 12px; font-size: .9rem; color: var(--cream); font-family: inherit; outline: none; transition: border-color .15s ease; }
+.pm-row .pm-code { font-family: 'Space Mono', monospace; text-transform: uppercase; }
+.pm-row .pm-code:focus, .pm-row .pm-title:focus { border-color: #5a8bff; }
+.pm-del { width: 34px; height: 34px; border: 1px solid var(--border); border-radius: 10px; background: transparent; color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; transition: all .15s ease; }
+.pm-del:hover { border-color: #ff6b6b; color: #ff6b6b; }
+
 .modal-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
 .btn-ghost { padding: 12px 18px; border: none; border-radius: 11px; background: transparent; font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); cursor: pointer; transition: color .15s ease; }
 .btn-ghost:hover { color: var(--cream); }

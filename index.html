@@ -32,7 +32,7 @@
             <option>Sprint Luglio</option>
           </select>
           <button class="btn-primary mono" id="btnNewSprint">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuovo Sprint
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Progetti
           </button>
           <button class="icon-btn" id="btnLogout" title="Esci">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -49,8 +49,8 @@
           <section class="hero">
             <div class="hero-top">
               <div>
-                <div class="hero-name">Sprint Giugno</div>
-                <div class="hero-range mono">02 giu – 27 giu 2025 · 20 gg lavorativi</div>
+                <div class="hero-name" id="heroName">Sprint Giugno</div>
+                <div class="hero-range mono" id="heroRange">02 giu – 27 giu 2025 · 20 gg lavorativi</div>
               </div>
               <button class="hero-edit" id="btnEditSprint" title="Modifica sprint">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
@@ -59,9 +59,9 @@
             <div class="hero-label mono">Story Points · Sprint</div>
             <div class="hero-sp">
               <span class="hero-sp-num" id="spNum">11.5</span>
-              <span class="hero-sp-tot">/ 20 SP</span>
+              <span class="hero-sp-tot" id="spTot">/ 20 SP</span>
             </div>
-            <div class="hero-cap mono"><span id="loggedH">93</span>h tracciate su 160h di capacità</div>
+            <div class="hero-cap mono"><span id="loggedH">93</span>h tracciate su <span id="capH">160</span>h di capacità</div>
             <div class="bar-track"><div class="bar-fill" id="capBar" style="width:58%"></div></div>
             <div class="hero-foot mono"><span>Capacità utilizzata</span><span class="hero-pct" id="capPct">58%</span></div>
           </section>
@@ -69,9 +69,9 @@
           <!-- STAT TILES -->
           <div class="tiles">
             <div class="tile tile-sand"><div class="tile-num" id="statProjects">4</div><div class="tile-lab mono">Progetti</div></div>
-            <div class="tile tile-dark"><div class="tile-num">20</div><div class="tile-lab mono">Giorni lav.</div></div>
-            <div class="tile tile-yellow"><div class="tile-num" id="statHours">93</div><div class="tile-lab mono">Ore / 160</div></div>
-            <div class="tile tile-sand"><div class="tile-num">04</div><div class="tile-lab mono">Sprint</div></div>
+            <div class="tile tile-dark"><div class="tile-num" id="statDays">20</div><div class="tile-lab mono">Giorni lav.</div></div>
+            <div class="tile tile-yellow"><div class="tile-num" id="statHours">93</div><div class="tile-lab mono" id="capLab">Ore / 160</div></div>
+            <div class="tile tile-sand"><div class="tile-num" id="statSprints">04</div><div class="tile-lab mono">Sprint</div></div>
           </div>
 
           <!-- SP PER PROJECT -->
@@ -143,28 +143,24 @@
   <div class="overlay is-hidden" id="overlay">
     <div class="modal" id="modal">
       <div class="modal-head">
-        <div class="modal-title" id="modalTitle">Nuovo Sprint</div>
+        <div class="modal-title" id="modalTitle">Progetti</div>
         <button class="modal-close" id="btnCloseModal">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
       <div class="modal-body">
         <label class="modal-lab mono">Nome Sprint</label>
-        <input class="modal-input" value="Sprint Giugno">
+        <input class="modal-input" id="spName" placeholder="es. Sprint Luglio">
         <div class="modal-grid">
-          <div>
-            <label class="modal-lab mono">Inizio</label>
-            <input class="modal-input" type="date" value="2025-06-02">
-          </div>
-          <div>
-            <label class="modal-lab mono">Fine</label>
-            <input class="modal-input" type="date" value="2025-06-27">
-          </div>
+          <div><label class="modal-lab mono">Inizio</label><input class="modal-input" id="spStart" type="date"></div>
+          <div><label class="modal-lab mono">Fine</label><input class="modal-input" id="spEnd" type="date"></div>
         </div>
-        <label class="modal-lab mono">Progetti assegnati</label>
-        <input class="modal-input" value="RCA, MEM, TW, OPS">
-        <div class="modal-hint mono">Sigle separate da virgola</div>
+        <label class="modal-lab mono" style="margin-top:18px">Progetti</label>
+        <div class="modal-hint mono" style="margin-top:0;margin-bottom:4px">Sigla, nome e colore di ogni progetto.</div>
+        <div id="pmList" class="pm-list"></div>
+        <button class="btn-ghost mono" id="pmAdd" style="margin-top:6px">+ Aggiungi progetto</button>
         <div class="modal-foot">
+          <button class="btn-ghost mono" id="btnDeleteSprint" style="margin-right:auto;color:#ff6b6b;display:none">Elimina</button>
           <button class="btn-ghost mono" id="btnCancel">Annulla</button>
           <button class="btn-primary mono" id="btnSubmit">Inserisci</button>
         </div>
