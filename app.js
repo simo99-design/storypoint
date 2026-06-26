@@ -373,7 +373,15 @@ function pmRow(code, proj) {
   return div;
 }
 
+function flagAddProject() {                                // evidenzia in rosso "+ Aggiungi progetto"
+  const b = $('#pmAdd');
+  b.style.color = '#ff6b6b';
+  b.style.borderColor = '#ff6b6b';
+}
+function clearAddProjectFlag() { const b = $('#pmAdd'); b.style.color = ''; b.style.borderColor = ''; }
+
 function openModal(editing) {
+  clearAddProjectFlag();
   const sp = sprint();
   editingSprint = editing && sp ? sp : null;
   $('#modalTitle').textContent = editingSprint ? 'Modifica Sprint' : 'Nuovo Sprint';
@@ -417,6 +425,7 @@ function saveSprint() {
 
   if (editingSprint) {
     const { projects, order, rename } = readProjectRows(editingSprint.projects);
+    if (!order.length) { flagAddProject(); return; }
     const grid = {};
     Object.entries(editingSprint.grid).forEach(([k, v]) => {
       const nv = rename[v] || v;
@@ -426,6 +435,7 @@ function saveSprint() {
     if (!projects[state.activeProject]) state.activeProject = order[0] || null;
   } else {
     const { projects, order } = readProjectRows({});
+    if (!order.length) { flagAddProject(); return; }
     const sp = { id: 's-' + Date.now(), name, startDate, endDate, projects, order, grid: {} };
     state.sprints.push(sp);
     state.activeSprintId = sp.id;
@@ -518,12 +528,16 @@ function applyState(d) {
 }
 
 let saveTimer = null;
+async function saveNow() {
+  if (!currentUser) return;
+  clearTimeout(saveTimer); saveTimer = null;
+  const { error } = await sb.from('user_data').upsert({ user_id: currentUser.id, app_state: serializeState() }, { onConflict: 'user_id' });
+  if (error) console.error('save', error);   // prima l'errore era ingoiato: salvataggi falliti invisibili
+}
 function scheduleSave() {
   if (!currentUser) return;
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(async () => {
-    await sb.from('user_data').upsert({ user_id: currentUser.id, app_state: serializeState() });
-  }, 600);
+  saveTimer = setTimeout(saveNow, 600);
 }
 async function loadState() {
   resetState();
@@ -589,7 +603,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('#btnAuthSubmit').addEventListener('click', () => handleAuth());
   $('#btnAuthSwitch').addEventListener('click', () => setAuthMode(authMode === 'signup' ? 'signin' : 'signup'));
   $('#authPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') handleAuth(); });
-  $('#btnLogout').addEventListener('click', async () => { await sb.auth.signOut(); setAuthMode('signin'); showAuth(); });
+  $('#btnLogout').addEventListener('click', async () => {
+    if (!confirm('Sei sicuro di voler uscire?')) return;
+    if (saveTimer) await saveNow();   // flush prima di azzerare currentUser, altrimenti il salvataggio in sospeso viene saltato
+    await sb.auth.signOut(); setAuthMode('signin'); showAuth();
+  });
 
   document.querySelectorAll('.tab').forEach((t) =>
     t.addEventListener('click', () => setTab(t.dataset.tab)));
@@ -628,6 +646,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('#pmAdd').addEventListener('click', () => {
     const row = pmRow('', null);
     $('#pmList').appendChild(row);
+    clearAddProjectFlag();
     row.querySelector('.pm-code').focus();
   });
   $('#pmList').addEventListener('dragover', (e) => {
@@ -643,6 +662,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('#btnCancel').addEventListener('click', closeModal);
   $('#overlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+  // flush del salvataggio debounced prima di chiudere/nascondere la pagina (evita perdita su reload/logout rapido)
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && saveTimer) saveNow(); });
+  window.addEventListener('pagehide', () => { if (saveTimer) saveNow(); });
 
   const { data } = await sb.auth.getSession();
   if (data.session) showApp(data.session.user); else showAuth();
