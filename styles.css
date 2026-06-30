@@ -287,6 +287,7 @@ body {
 #paneSummary .sp-panel { flex: 1; }
 .sp-head { font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--cream-mut); margin-bottom: 18px; }
 #spList { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; align-content: start; align-items: start; }
+#spList:has(.empty) { flex: 1; display: flex; align-items: center; justify-content: center; } /* nessuno sprint/progetto: centra lo stato vuoto nel pannello */
 .sp-row { display: flex; flex-direction: column; gap: 10px; border-radius: 22px; padding: 16px; }
 .sp-name { display: flex; flex-direction: column; gap: 4px; }
 .sp-code { font-weight: 800; font-size: 1.9rem; line-height: 1; letter-spacing: -.01em; }
