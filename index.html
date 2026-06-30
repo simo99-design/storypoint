@@ -14,87 +14,75 @@
   <div class="shell" id="appShell" hidden>
     <div class="app">
 
-      <!-- HEADER -->
-      <header class="hd">
-        <div class="hd-brand">
+      <!-- SIDEBAR -->
+      <nav class="sidebar">
+        <button class="icon-btn sidebar-toggle" id="btnToggleSidebar" title="Apri/chiudi menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="sidebar-brand">
           <div class="logo">
             <img src="https://www.thewavestudio.it/favicon.ico" alt="The Wave">
           </div>
-          <div>
-            <div class="hd-title">Storypoints Workspace</div>
-            <div class="hd-sub mono">Design · Code · Surf</div>
+          <div class="hd-title">The Wave</div>
+        </div>
+        <hr class="sidebar-divider">
+        <button type="button" class="nav-item is-active" data-view="game"><span class="nav-ico">🎮</span><span>Dashboard</span></button>
+        <button type="button" class="nav-item" data-view="track"><span class="nav-ico">📊</span><span>Tracking</span></button>
+
+        <div class="sidebar-foot">
+          <div class="sidebar-user">
+            <div class="user-id">
+              <div class="user-avatar" id="userAvatar" title="Profilo" hidden></div>
+              <span class="sidebar-username" id="userName"></span>
+            </div>
           </div>
         </div>
-        <div class="hd-actions">
-          <select class="field-pill field-pill--select mono" id="sprintSelect">
-            <option>Sprint Giugno</option>
-            <option>Sprint Maggio</option>
-            <option>Sprint Luglio</option>
-          </select>
-          <button class="btn-primary mono" id="btnNewSprint">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuovo Sprint
-          </button>
-          <button class="icon-btn" id="btnLogout" title="Esci">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          </button>
-        </div>
+      </nav>
+
+      <div class="app-main">
+      <span id="saveStatus" class="save-status mono" aria-live="polite"></span>
+      <!-- HEADER -->
+      <header class="hd">
+        <div class="hd-actions"></div>
       </header>
 
-      <!-- BODY -->
-      <div class="body">
+      <!-- GAMIFICATION DASHBOARD -->
+      <div class="game-view" id="gameView"></div>
 
-        <!-- LEFT COLUMN -->
-        <aside class="col-left">
-          <!-- HERO -->
-          <section class="hero">
-            <div class="hero-top">
-              <div>
-                <div class="hero-name" id="heroName">Sprint Giugno</div>
-                <div class="hero-range mono" id="heroRange">02 giu – 27 giu 2025 · 20 gg lavorativi</div>
-              </div>
-              <button class="hero-edit" id="btnEditSprint" title="Modifica sprint">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+      <!-- BODY (tracking) -->
+      <div class="body" id="trackView">
+        <div class="bento bento-track">
+
+          <!-- CARD -->
+          <main class="card" style="grid-area:card">
+          <div class="tabs">
+            <button class="tab is-active" data-tab="summary">Sprint</button>
+            <button class="tab" data-tab="calendar">Calendario Ore</button>
+            <button class="tab" data-tab="workspace">Workspace Progetti</button>
+            <div class="tab-sprints">
+              <select class="field-pill field-pill--select mono" id="sprintSelect"><!-- popolato da renderSprintBar() --></select>
+              <button class="icon-btn" id="btnNewSprint" title="Nuovo Sprint">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               </button>
             </div>
-            <div class="hero-label mono">Story Points · Sprint</div>
-            <div class="hero-sp">
-              <span class="hero-sp-num" id="spNum">11.5</span>
-              <span class="hero-sp-tot" id="spTot">/ 20 SP</span>
-            </div>
-            <div class="hero-cap mono"><span id="loggedH">93</span>h tracciate su <span id="capH">160</span>h di capacità</div>
-            <div class="bar-track"><div class="bar-fill" id="capBar" style="width:58%"></div></div>
-            <div class="hero-foot mono"><span>Capacità utilizzata</span><span class="hero-pct" id="capPct">58%</span></div>
-          </section>
-
-          <!-- STAT TILES -->
-          <div class="tiles">
-            <div class="tile tile-sand"><div class="tile-num" id="statProjects">4</div><div class="tile-lab mono">Progetti</div></div>
-            <div class="tile tile-dark"><div class="tile-num" id="statDays">20</div><div class="tile-lab mono">Giorni lav.</div></div>
-            <div class="tile tile-yellow"><div class="tile-num" id="statHours">93</div><div class="tile-lab mono" id="capLab">Ore / 160</div></div>
-            <div class="tile tile-sand"><div class="tile-num" id="statSprints">04</div><div class="tile-lab mono">Sprint</div></div>
           </div>
 
-          <!-- SP PER PROJECT -->
-          <section class="sp-panel">
-            <div class="sp-head mono">Story Points per progetto</div>
-            <div id="spList"></div>
+          <!-- SUMMARY PANE -->
+          <section class="pane" id="paneSummary">
+            <!-- SP PER PROJECT -->
+            <section class="sp-panel">
+              <div class="sp-head mono">Story Points per progetto</div>
+              <div id="spList"></div>
+            </section>
           </section>
-        </aside>
-
-        <!-- RIGHT: CARD -->
-        <main class="card">
-          <div class="tabs">
-            <button class="tab is-active" data-tab="calendar">Calendario Ore</button>
-            <button class="tab" data-tab="workspace">Workspace Progetti</button>
-          </div>
 
           <!-- CALENDAR PANE -->
-          <section class="pane" id="paneCalendar">
+          <section class="pane is-hidden" id="paneCalendar">
             <div class="pane-head">
               <div class="pane-title">Timesheet · <span id="weekTitle">Settimana 1</span></div>
               <div class="week-btns" id="weekBtns"></div>
             </div>
-            <div class="hint mono">Clicca una cella per assegnare un progetto →</div>
+            <div class="hint mono">Clicca o trascina sulle celle per assegnare un progetto →</div>
             <div class="cal" id="cal"></div>
             <div class="assigned">
               <div class="assigned-lab mono">Progetti assegnati:</div>
@@ -135,7 +123,9 @@
             </div>
           </section>
         </main>
+        </div><!-- /.bento -->
       </div>
+      </div><!-- /.app-main -->
     </div>
   </div>
 
@@ -168,6 +158,54 @@
     </div>
   </div>
 
+  <!-- PROFILO -->
+  <div class="overlay is-hidden" id="profileOverlay">
+    <div class="modal" style="max-width:22rem">
+      <div class="modal-head">
+        <div class="modal-title">Profilo</div>
+        <button class="modal-close" id="profileClose" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="profile-avatar-row">
+          <div class="profile-avatar-wrap">
+            <div class="user-avatar user-avatar--lg" id="profileAvatar"></div>
+            <button class="profile-edit" id="btnEditAvatar" title="Modifica avatar" aria-label="Modifica avatar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="profile-row"><span>Nome</span><b id="profFirst">—</b></div>
+        <div class="profile-row"><span>Cognome</span><b id="profLast">—</b></div>
+        <div class="profile-row"><span>Email</span><b id="profEmail">—</b></div>
+        <div class="profile-row profile-row--theme"><span>Tema</span><div class="theme-toggle-group"><button class="theme-btn" id="btnThemeLight" onclick="applyTheme('light');localStorage.setItem('theme','light');updateThemeBtns()">☀ Chiaro</button><button class="theme-btn" id="btnThemeDark" onclick="applyTheme('dark');localStorage.setItem('theme','dark');updateThemeBtns()">☾ Scuro</button></div></div>
+        <button class="btn-logout-profile" id="btnLogout" title="Esci">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Esci
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLLABORATORI -->
+  <div class="overlay is-hidden" id="collabOverlay">
+    <div class="modal" style="max-width:26rem">
+      <div class="modal-head">
+        <div class="modal-title" id="collabTitle">Collaboratori</div>
+        <button class="modal-close" id="collabClose" type="button">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label class="modal-lab mono">Cerca per email</label>
+        <input class="modal-input" id="collabSearch" type="text" autocomplete="off" placeholder="nome@esempio.it" style="margin-bottom:0">
+        <div class="modal-hint" id="collabMsg"></div>
+        <div class="collab-search-results" id="collabResults"></div>
+        <div class="collab-members-lab mono">Collaboratori del progetto</div>
+        <div id="collabMembers"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- AUTH -->
   <div class="overlay" id="authOverlay">
     <div class="auth-wrap">
@@ -177,10 +215,39 @@
         <div class="modal-title" id="authTitle">Accedi</div>
       </div>
       <div class="modal-body">
+        <div class="avatar-picker" id="avatarPicker" hidden>
+          <!-- ponytail: dev'essere <div>, NON <button>: react-nice-avatar usa height:100% e i browser non risolvono le % di altezza dentro <button>, sfasando i capelli -->
+          <div class="avatar-choose" id="avatarChoose" role="button" tabindex="0" title="Scegli avatar">
+            <span class="avatar-mount" id="avatarChosenMount"></span>
+            <span class="avatar-plus">+</span>
+          </div>
+        </div>
+        <div id="nameFields" class="name-row" hidden>
+          <div>
+            <label class="modal-lab mono">Nome</label>
+            <input class="modal-input" id="authFirstName" type="text" autocomplete="given-name" placeholder="Mario">
+          </div>
+          <div>
+            <label class="modal-lab mono">Cognome</label>
+            <input class="modal-input" id="authLastName" type="text" autocomplete="family-name" placeholder="Rossi">
+          </div>
+        </div>
+        <div id="areaField" hidden>
+          <label class="modal-lab mono">Area</label>
+          <select class="modal-input" id="authArea">
+            <option value="coding">Area Coding</option>
+            <option value="design">Area Design</option>
+          </select>
+        </div>
         <label class="modal-lab mono">Email</label>
         <input class="modal-input" id="authEmail" type="email" autocomplete="email" placeholder="tu@esempio.it">
         <label class="modal-lab mono">Password</label>
-        <input class="modal-input" id="authPassword" type="password" autocomplete="current-password" placeholder="••••••••">
+        <div class="pw-wrap">
+          <input class="modal-input" id="authPassword" type="password" autocomplete="current-password" placeholder="••••••••">
+          <button type="button" class="pw-toggle" id="pwToggle" title="Mostra password" aria-label="Mostra password">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
         <div class="modal-hint" id="authMsg"></div>
         <div class="modal-foot" style="flex-direction:column; gap:8px">
           <button class="btn-primary mono" id="btnAuthSubmit" style="width:100%; justify-content:center">Accedi</button>
@@ -191,7 +258,183 @@
     </div>
   </div>
 
+  <div class="overlay is-hidden" id="avatarOverlay">
+    <div class="modal" style="max-width:34rem">
+      <div class="modal-head">
+        <div class="modal-title">Scegli avatar</div>
+        <button class="icon-btn" id="avatarClose" type="button" title="Chiudi">✕</button>
+      </div>
+      <div class="modal-body avatar-picker">
+        <div class="ac-top">
+          <div class="avatar-preview" id="avatarPreview"></div>
+          <button class="ac-random" id="avatarRandom" type="button" title="Avatar casuale" aria-label="Avatar casuale">🎲</button>
+        </div>
+        <div class="ac-stepbar" id="avatarStepbar"></div>
+        <div class="avatar-controls" id="avatarControls"></div>
+        <div class="ac-nav">
+          <button class="btn-ghost mono" id="avatarCloseStep" type="button">Chiudi</button>
+          <button class="btn-ghost mono" id="avatarBack" type="button">Indietro</button>
+          <button class="btn-primary mono" id="avatarNext" type="button">Avanti</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import React from 'https://esm.sh/react@18';
+    import { createRoot } from 'https://esm.sh/react-dom@18/client';
+    import NiceAvatar, { genConfig } from 'https://esm.sh/react-nice-avatar@1.5.0?deps=react@18,react-dom@18';
+
+    const $ = (s, r = document) => r.querySelector(s);
+    const h = React.createElement;
+    const roots = new WeakMap();
+    const DEFAULTS = genConfig();                 // config completa di riferimento (tutti i campi valorizzati)
+    const full = (c) => ({ ...DEFAULTS, ...(c || {}), earSize: 'small', hatStyle: 'none', hairColorRandom: true }); // base: orecchie piccole, nessun cappello. hairColorRandom:true perché thick/mohawk applicano hairColor solo con questo flag (bug react-nice-avatar)
+
+    // error boundary: se NiceAvatar lancia su una certa config, mostra un cerchio neutro invece di far crashare la pagina
+    class Boundary extends React.Component {
+      constructor(p) { super(p); this.state = { err: false }; }
+      static getDerivedStateFromError() { return { err: true }; }
+      componentDidCatch(e) { console.error('avatar render error:', e); }
+      render() {
+        return this.state.err
+          ? h('div', { style: { width: '100%', height: '100%', borderRadius: '50%', background: '#cdc3ba' } })
+          : this.props.children;
+      }
+    }
+
+    function renderInto(el, cfg) {
+      if (!el) return;
+      let root = roots.get(el);
+      if (!root) { root = createRoot(el); roots.set(el, root); }
+      const c = full(cfg);
+      // key = config serializzata: cambia → rimonta il boundary, così recupera dopo un errore precedente
+      root.render(h(Boundary, { key: JSON.stringify(c) }, h(NiceAvatar, { style: { width: '100%', height: '100%' }, ...c })));
+    }
+
+    // valori ammessi da react-nice-avatar (cicliamo tra questi)
+    const OPTS = {
+      sex: ['man', 'woman'], hairStyle: ['normal', 'thick', 'mohawk', 'womanLong', 'womanShort'],
+      eyeStyle: ['circle', 'oval', 'smile'], eyeBrowStyle: ['up', 'upWoman'],
+      noseStyle: ['short', 'long', 'round'], mouthStyle: ['laugh', 'smile', 'peace'],
+      glassesStyle: ['none', 'round', 'square'], hatStyle: ['none', 'beanie', 'turban'],
+      shirtStyle: ['hoody', 'short', 'polo'], earSize: ['small', 'big'],
+    };
+    const LABELS = { sex: 'Sesso', hairStyle: 'Capelli', eyeStyle: 'Occhi', eyeBrowStyle: 'Sopracciglia', noseStyle: 'Naso', mouthStyle: 'Bocca', glassesStyle: 'Occhiali', hatStyle: 'Cappello', shirtStyle: 'Maglia', earSize: 'Orecchie' };
+    const COLORS = { bgColor: 'Sfondo', hairColor: 'Capelli', shirtColor: 'Maglia', hatColor: 'Cappello' };
+    const VLAB = {
+      sex: { man: 'Uomo', woman: 'Donna' },
+      hairStyle: { normal: 'Corti', thick: 'Folti', mohawk: 'Cresta', womanLong: 'Lunghi', womanShort: 'Caschetto' },
+      eyeStyle: { circle: 'Tondi', oval: 'Ovali', smile: 'Sorriso' },
+      eyeBrowStyle: { up: 'Normali', upWoman: 'Sottili' },
+      noseStyle: { short: 'Corto', long: 'Lungo', round: 'Tondo' },
+      mouthStyle: { laugh: 'Risata', smile: 'Sorriso', peace: 'Linguaccia' },
+      glassesStyle: { none: 'Nessuno', round: 'Tondi', square: 'Quadrati' },
+      hatStyle: { none: 'Nessuno', beanie: 'Berretto', turban: 'Turbante' },
+      shirtStyle: { hoody: 'Felpa', short: 'T-shirt', polo: 'Polo' },
+      earSize: { small: 'Piccole', big: 'Grandi' },
+    };
+    const PALETTE = ['#F9C9B6', '#AC6651', '#77311D', '#FC909F', '#E0DDFF', '#D2EFF3', '#506AF4', '#6BD9E9', '#FFEDEF', '#9287FF', '#FFEBA4', '#E2E2E2', '#F4D150', '#85C2C6', '#7C3F58', '#000000', '#FFFFFF'];
+    const BG_PALETTE = ['#0057FF', '#CDC3BA', '#323232', '#FAF7EB', '#FFD400']; // sfondo: Blu, Sabbia, Nero, Bianco, Giallo
+    const HAIR_PALETTE = ['#E6C67A', '#A56B3D', '#6B4423', '#4A2F1B', '#2C1B0E', '#000000']; // capelli: biondo, castano → nero
+    const rand = (a) => a[Math.floor(Math.random() * a.length)];
+    const gen = () => ({ ...genConfig(), bgColor: rand(BG_PALETTE) }); // sfondo sempre on-palette
+    // cambiare sesso deve cambiare visibilmente capelli/sopracciglia
+    const SEX_PRESET = { man: { hairStyle: 'normal', eyeBrowStyle: 'up' }, woman: { hairStyle: 'womanLong', eyeBrowStyle: 'upWoman' } };
+
+    const STEPS = [
+      { title: 'Base', items: ['sex', 'bgColor', 'eyeStyle', 'eyeBrowStyle', 'noseStyle', 'mouthStyle', 'glassesStyle'] },
+      { title: 'Capelli & abbigliamento', items: ['hairStyle', 'hairColor', 'shirtStyle', 'shirtColor'] },
+    ];
+
+    let config = gen();
+    let trigger = null;
+    let step = 0;
+
+    function refresh() {
+      renderInto($('#avatarPreview'), config);
+      document.querySelectorAll('#avatarControls .ac-section').forEach((sec) => {
+        const k = sec.dataset.key, ck = sec.dataset.colorKey;
+        if (k) sec.querySelectorAll('.ac-chip').forEach((b, i) => b.classList.toggle('is-active', OPTS[k][i] === config[k]));
+        if (ck) sec.querySelectorAll('.ac-swatch').forEach((s) => s.classList.toggle('is-active', s.dataset.color.toLowerCase() === String(config[ck]).toLowerCase()));
+      });
+    }
+
+    function sectionEl(key) {
+      const sec = document.createElement('div');
+      sec.className = 'ac-section';
+      if (OPTS[key]) {
+        sec.dataset.key = key;
+        const chips = OPTS[key].map((v) =>
+          `<button type="button" class="ac-chip" data-val="${v}">${(VLAB[key] && VLAB[key][v]) || v}</button>`).join('');
+        sec.innerHTML = `<div class="ac-title mono">${LABELS[key]}</div><div class="ac-chips">${chips}</div>`;
+        sec.querySelectorAll('.ac-chip').forEach((b) => b.addEventListener('click', () => { const v = b.dataset.val; config = { ...config, [key]: v, ...(key === 'sex' ? SEX_PRESET[v] : {}) }; refresh(); }));
+      } else {
+        sec.dataset.colorKey = key;
+        const sw = (key === 'bgColor' ? BG_PALETTE : key === 'hairColor' ? HAIR_PALETTE : PALETTE).map((c) =>
+          `<button type="button" class="ac-swatch" data-color="${c}" style="background:${c}"></button>`).join('');
+        sec.innerHTML = `<div class="ac-title mono">Colore ${COLORS[key]}</div><div class="ac-chips">${sw}</div>`;
+        sec.querySelectorAll('.ac-swatch').forEach((s) => s.addEventListener('click', () => { config = { ...config, [key]: s.dataset.color }; refresh(); }));
+      }
+      return sec;
+    }
+
+    function buildControls() {
+      const wrap = $('#avatarControls');
+      wrap.innerHTML = '';
+      STEPS.forEach((st, i) => {
+        const panel = document.createElement('div');
+        panel.className = 'ac-step'; panel.dataset.step = i;
+        st.items.forEach((k) => panel.appendChild(sectionEl(k)));
+        wrap.appendChild(panel);
+      });
+      $('#avatarStepbar').innerHTML =
+        `<span class="ac-steptitle"></span><span class="ac-dots">${STEPS.map((_, i) => `<i data-i="${i}"></i>`).join('')}</span>`;
+      showStep(0);
+      refresh();
+    }
+
+    function showStep(i) {
+      step = i;
+      document.querySelectorAll('#avatarControls .ac-step').forEach((p) => p.classList.toggle('is-active', Number(p.dataset.step) === i));
+      $('.ac-steptitle').textContent = `${i + 1}. ${STEPS[i].title}`;
+      document.querySelectorAll('#avatarStepbar .ac-dots i').forEach((d, di) => d.classList.toggle('is-active', di === i));
+      $('#avatarBack').style.display = i === 0 ? 'none' : '';
+      $('#avatarCloseStep').style.display = i === 0 ? '' : 'none';
+      $('#avatarNext').textContent = i === STEPS.length - 1 ? 'Conferma' : 'Avanti';
+    }
+
+    function open(triggerEl, startConfig) {
+      trigger = triggerEl || null;
+      if (startConfig && typeof startConfig === 'object') config = full(startConfig);
+      buildControls();
+      $('#avatarOverlay').classList.remove('is-hidden');
+    }
+    const close = () => $('#avatarOverlay').classList.add('is-hidden');
+
+    $('#avatarChoose')?.addEventListener('click', () => open($('#avatarChoose')));
+    $('#avatarChoose')?.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open($('#avatarChoose')); } });
+    $('#avatarClose').addEventListener('click', close);
+    $('#avatarCloseStep').addEventListener('click', close);
+    $('#avatarRandom').addEventListener('click', () => { config = gen(); refresh(); });
+    $('#avatarBack').addEventListener('click', () => { if (step > 0) showStep(step - 1); });
+    $('#avatarNext').addEventListener('click', () => {
+      if (step < STEPS.length - 1) { showStep(step + 1); return; }
+      close();
+      if (trigger === $('#avatarChoose')) {
+        renderInto($('#avatarChosenMount'), config);
+        $('#avatarChoose').classList.add('has-avatar');
+      }
+      document.dispatchEvent(new CustomEvent('avatar:confirm', { detail: { config } }));
+    });
+
+    window.AvatarKit = { get config() { return config; }, open, renderInto };
+    document.dispatchEvent(new Event('avatarkit:ready'));
+  </script>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.js"></script>
-  <script src="app.js?v=3"></script>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <div id="loadingOverlay" class="loading-overlay is-hidden"><div class="spinner" aria-label="Caricamento"></div></div>
+  <script src="app.js?v=33"></script>
 </body>
 </html>
