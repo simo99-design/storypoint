@@ -173,6 +173,42 @@ function renderSprintBar() {
   }
 }
 
+// ---- Render: riepilogo generale sprint -------------------------------------
+function renderSprintSummary() {
+  const sp = sprint();
+  const hero = $('#sprHero');
+  if (!sp) { hero.hidden = true; return; }
+  hero.hidden = false;
+
+  const assignedHours = Object.keys(sp.grid).length;
+  const workedSP = assignedHours / 8;
+  const plannedSP = sp.order.reduce((n, c) => n + (sp.projects[c].sp || 0), 0);
+  const cap = capacityHours(sp);
+  const days = workingDays(sp.startDate, sp.endDate);
+  const pct = plannedSP ? Math.min(100, workedSP / plannedSP * 100) : 0;
+  const stat = (num, lab) => `<div class="hero-stat"><div class="hero-stat-num">${num}</div><div class="hero-stat-lab mono">${lab}</div></div>`;
+
+  hero.innerHTML =
+    `<div class="hero-top">` +
+      `<div class="hero-head"><div class="hero-name">${esc(sp.name)}</div>` +
+      `<div class="hero-range mono">${esc(fmtRange(sp.startDate, sp.endDate))}</div></div>` +
+    `</div>` +
+    `<div class="hero-label mono">Story points lavorati</div>` +
+    `<div class="hero-sp"><span class="hero-sp-num">${fmtSP(workedSP)}</span>` +
+      `<span class="hero-sp-tot">/ ${fmtSP(plannedSP)} SP</span></div>` +
+    `<div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>` +
+    `<div class="hero-foot mono"><span>Avanzamento</span><span class="hero-pct">${Math.round(pct)}%</span></div>` +
+    `<div class="hero-stats">` +
+      stat(sp.order.length, 'Progetti') +
+      stat(days, 'Giorni lavorativi') +
+      stat(`${assignedHours}<span class="hero-stat-sub">/${cap}h</span>`, 'Ore assegnate') +
+      stat(fmtSP(Math.max(0, plannedSP - workedSP)), 'SP rimanenti') +
+    `</div>` +
+    `<button type="button" class="hero-edit mono" onclick="openModal(true)">` +
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>` +
+      `Modifica sprint</button>`;
+}
+
 // ---- Render: metriche live -------------------------------------------------
 // Stato vuoto riusabile: icona + titolo + messaggio + eventuale CTA. ctaOnclick è codice fidato (interno).
 function emptyState(icon, title, msg, ctaLabel, ctaOnclick) {
@@ -186,6 +222,7 @@ function emptyState(icon, title, msg, ctaLabel, ctaOnclick) {
 
 function renderMetrics() {
   const sp = sprint();
+  renderSprintSummary();
 
   const spList = $('#spList');
   spList.innerHTML = '';
@@ -211,6 +248,9 @@ function renderMetrics() {
     row.className = 'sp-row';
     row.style.background = p.color;
     row.style.color = p.ink;
+    row.tabIndex = 0;
+    row.setAttribute('role', 'button');
+    row.title = 'Apri per modificare o eliminare';
     row.innerHTML =
       `<div class="sp-name"><span class="sp-code">${esc(code)}</span><span class="sp-proj">${esc(p.name)}</span></div>` +
       `<div class="sp-stats mono">` +
@@ -219,6 +259,8 @@ function renderMetrics() {
       `</div>` +
       `<div class="sp-bar-track"><div class="sp-bar-fill" style="width:${width}%"></div></div>` +
       `<div class="sp-pct mono">${Math.round(width)}% completato</div>`;
+    row.addEventListener('click', () => openProjectModal(code));
+    row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openProjectModal(code); } });
     spList.appendChild(row);
   });
 
@@ -231,6 +273,80 @@ function renderMetrics() {
     chip.textContent = p.name;
     chips.appendChild(chip);
   });
+}
+
+// ---- Modale progetto: campi editabili al volo + elimina ---------------------
+let projModalCode = null;
+
+function openProjectModal(code) {
+  const sp = sprint();
+  const p = sp && sp.projects[code];
+  if (!p) return;
+  projModalCode = code;
+  $('#projTitle').textContent = `Progetto ${code}`;
+  $('#projCode').value = code;
+  $('#projSP').value = p.sp || 0;
+  $('#projColor').value = p.color;
+  showProjConfirm(false);
+  $('#projOverlay').classList.remove('is-hidden');
+  $('#projCode').focus();
+}
+function closeProjectModal() { $('#projOverlay').classList.add('is-hidden'); projModalCode = null; }
+
+// Applica subito la modifica (evento change = blur/Invio: rinominare a ogni tasto sarebbe ingestibile).
+function applyProjectEdit() {
+  const sp = sprint();
+  const old = projModalCode;
+  const p = sp && sp.projects[old];
+  if (!p) return;
+
+  const code = $('#projCode').value.trim().toUpperCase();
+  if (!code || (code !== old && sp.projects[code])) {
+    toast(code ? `Esiste già un progetto ${code}.` : 'La sigla non può essere vuota.', 'error');
+    $('#projCode').value = old;
+    return;
+  }
+
+  const color = $('#projColor').value;
+  Object.assign(p, { name: code, sp: Math.max(0, parseFloat($('#projSP').value) || 0), color, ink: inkFor(color) });
+
+  if (code !== old) {                                    // rinomina: order, chiave progetti, celle del calendario
+    sp.order = sp.order.map((c) => (c === old ? code : c));
+    delete sp.projects[old];
+    sp.projects[code] = p;
+    Object.keys(sp.grid).forEach((k) => { if (sp.grid[k] === old) sp.grid[k] = code; });
+    if (state.activeProject === old) state.activeProject = code;
+    projModalCode = code;
+    $('#projTitle').textContent = `Progetto ${code}`;
+  }
+
+  renderAll();
+  scheduleSave();
+}
+
+// La conferma sostituisce il contenuto della stessa modale.
+function showProjConfirm(on) {
+  $('#projView').hidden = on;
+  $('#projConfirm').hidden = !on;
+  $('#projTitle').textContent = on ? 'Elimina progetto' : `Progetto ${projModalCode}`;
+  if (on) {
+    $('#projConfirmMsg').textContent = `Sei sicuro di voler eliminare \u201c${projModalCode}\u201d?`;
+    $('#projConfirmDel').focus();
+  }
+}
+
+function deleteProjectConfirmed() {
+  const sp = sprint();
+  const code = projModalCode;
+  if (!sp || !sp.projects[code]) return closeProjectModal();
+  delete sp.projects[code];
+  sp.order = sp.order.filter((c) => c !== code);
+  Object.keys(sp.grid).forEach((k) => { if (sp.grid[k] === code) delete sp.grid[k]; });
+  if (state.activeProject === code) state.activeProject = sp.order[0] || null;
+  closeProjectModal();
+  renderAll();
+  scheduleSave();
+  toast('Progetto eliminato.');
 }
 
 // ---- Render: calendario ----------------------------------------------------
@@ -1069,8 +1185,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     if (!$('#collabOverlay').classList.contains('is-hidden')) closeCollabModal();   // chiudi prima la modale collaboratori
+    else if (!$('#projOverlay').classList.contains('is-hidden')) closeProjectModal();
     else closeModal();
   });
+
+  $('#projClose').addEventListener('click', closeProjectModal);
+  $('#projOverlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeProjectModal(); });
+  ['#projCode', '#projSP', '#projColor'].forEach((sel) => $(sel).addEventListener('change', applyProjectEdit));
+  $('#projDelete').addEventListener('click', () => showProjConfirm(true));
+  $('#projCancelDel').addEventListener('click', () => showProjConfirm(false));
+  $('#projConfirmDel').addEventListener('click', deleteProjectConfirmed);
 
   $('#collabClose').addEventListener('click', closeCollabModal);
   $('#collabOverlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeCollabModal(); });

@@ -68,10 +68,11 @@
           </div>
 
           <!-- SUMMARY PANE -->
-          <section class="pane" id="paneSummary">
+          <section class="pane summary-grid" id="paneSummary">
+            <!-- RIEPILOGO SPRINT -->
+            <section class="hero" id="sprHero"></section>
             <!-- SP PER PROJECT -->
             <section class="sp-panel">
-              <div class="sp-head mono">Story Points per progetto</div>
               <div id="spList"></div>
             </section>
           </section>
@@ -153,6 +154,36 @@
           <button class="btn-ghost mono" id="btnDeleteSprint" style="margin-right:auto;color:#ff6b6b;display:none">Elimina</button>
           <button class="btn-ghost mono" id="btnCancel">Annulla</button>
           <button class="btn-primary mono" id="btnSubmit">Inserisci</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGETTO (dalla card storypoints) -->
+  <div class="overlay is-hidden" id="projOverlay">
+    <div class="modal" style="max-width:22rem">
+      <div class="modal-head">
+        <div class="modal-title" id="projTitle">Progetto</div>
+        <button class="modal-close" id="projClose" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" id="projView">
+        <label class="modal-lab mono">Sigla</label>
+        <input class="modal-input" id="projCode" type="text" maxlength="8">
+        <div class="modal-grid">
+          <div><label class="modal-lab mono">Story points</label><input class="modal-input" id="projSP" type="number" min="0" step="0.5"></div>
+          <div><label class="modal-lab mono">Colore</label><input class="modal-input" id="projColor" type="color"></div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn-ghost mono" id="projDelete" type="button" style="color:#ff6b6b">Elimina</button>
+        </div>
+      </div>
+      <div class="modal-body" id="projConfirm" hidden>
+        <div class="proj-confirm-msg" id="projConfirmMsg"></div>
+        <div class="modal-foot">
+          <button class="btn-ghost mono" id="projCancelDel" type="button">Annulla</button>
+          <button class="btn-primary mono is-danger" id="projConfirmDel" type="button">Elimina</button>
         </div>
       </div>
     </div>
